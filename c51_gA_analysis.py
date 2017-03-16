@@ -24,12 +24,6 @@ except ImportError as e:
     print type(e)
     print e
     exit()
-def run_from_ipython():
-    try:
-        __IPYTHON__
-        return True
-    except NameError:
-        return False
 
 def parse_input():
     parser = argparse.ArgumentParser(description='''
@@ -274,6 +268,12 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
     ############################
     # FUNCTIONS FOR plot_fit() #
     ############################
+    def run_from_ipython():
+        try:
+            __IPYTHON__
+            return True
+        except NameError:
+            return False
     def continuum_plot(args,params_plot,result,ax,legend):
         ga_plot = gafit.ga_epi(result['xdict']['epi0'],result['xdict']['epi_plot'],0,**result['ga_min'].values)
         dga_plot = gafit.dga_epi(epi0=result['xdict']['epi0'],epi=result['xdict']['epi_plot'],a=0,lam_cov=result['cov_lam'][0:-1,0:-1],**result['ga_min'].values)
