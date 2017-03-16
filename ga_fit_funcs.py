@@ -9,6 +9,7 @@ def Q(chisq,dof):
     return spsp.gammaincc(0.5*dof,0.5*chisq)
 def aicc(chisq,l_d,l_par):
     return 2*l_par + chisq + 2.*(l_par+1)*(l_par+2)/(l_d -l_par -2)
+<<<<<<< HEAD
 def minimize(chisq,ini_vals,l_d):
     ga_min = mn.Minuit(chisq, pedantic=False, print_level=0, **ini_vals)
     ga_min.migrad()
@@ -18,6 +19,12 @@ def minimize(chisq,ini_vals,l_d):
         print '  %s = %.4f +- %.4f' %(p,ga_min.values[p],ga_min.errors[p])
     cov = np.array(ga_min.matrix(correlation=False,skip_fixed=True))
     return ga_min, cov
+=======
+def minimize(chisq,ini_vals):
+    ga_min = mn.Minuit(chisq, pedantic=False, print_level=0, **ini_vals)
+    ga_min.migrad()
+    return ga_min
+>>>>>>> c6283814fb1ec722e6fababa11d417b5412baa74
 
 ########################################
 #  gA SU(2) ChiPT vs e_pi = mpi / 4piFpi
