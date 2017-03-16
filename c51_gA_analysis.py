@@ -127,6 +127,7 @@ def plotting_parameters():
     # Figure sizes and fonts
     p['fig_gldn'] = (8.125,5.018)
     p['ga_axes'] = [0.095,0.128,0.895,0.865]
+    p['mL_axes'] = [0.095,0.125,0.895,0.865]
     p['fs'] = 24
 
     # set up ensemble parameters for plotting
@@ -377,7 +378,6 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
             if args.show_fv:
                 ax.errorbar(xi+fv_shift,gi,xerr=dxi,yerr=dgi,\
                     marker=mkr,color='k',mec='k',mfc='None',alpha=0.5,linestyle='None')
-            #SWITCH
             if ens in l_check:
                 legend.insert(3,leg)
         return legend
@@ -405,6 +405,48 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ax.legend(handles=leg2,loc=3,numpoints=1,ncol=1,shadow=True,fancybox=True)
         ax.tick_params(axis='both', which='major', labelsize=14)
         return 0
+    def fv_plot(args,params_chipt,params_plot,result,data,ax,select):
+        e0 = result['xdict']['epi0']
+        x = result['xdict']['xplot']
+        # data for plots
+        i_fv = [params_chipt['ens_idx']['a12m220S'],params_chipt['ens_idx']['a12m220'],\
+            params_chipt['ens_idx']['a12m220L']]
+        mL = [params_chipt['mpiL']['a12m220S'],params_chipt['mpiL']['a12m220'],\
+            params_chipt['mpiL']['a12m220L']]
+        epiL = [data['epi_b0'][params_chipt['ens_idx']['a12m220S']],\
+            data['epi_b0'][params_chipt['ens_idx']['a12m220']],\
+            data['epi_b0'][params_chipt['ens_idx']['a12m220L']]]
+        xL = np.exp(-np.array(mL)) / np.sqrt(np.array(mL))
+        epi = np.mean(epiL)
+        epifv = epi
+        if 'esq' in select:
+            epi = epi**2
+        a = params_chipt['aw0']['a12m220']
+        # reconstructed fit
+        mLplot = result['xdict']['mL']
+        xplot = np.exp(-mLplot) / np.sqrt(mLplot)
+        #print ga_L
+        ga_L = np.zeros_like(mLplot)
+        dga_L = np.zeros_like(mLplot)
+        cov = np.array(result['ga_min'].matrix(correlation=False,skip_fixed=True))
+        for i,mLi in enumerate(mLplot):
+            ga_L[i] += gafit.dgaFV(epifv,mLi,result['ga_min'].values['g0fv'])
+            dga_L[i] = gafit.dga_epi_fv(e0,epi,epifv,a,mLi,cov,**result['ga_min'].values)
+        ga_L += gafit.ga_epi(epi0=e0,epi=epi,a=a,**result['ga_min'].values)
+        #print ga_L
+        gn = params_plot['e_clr']['a12m220']
+        mkr = params_plot['e_mrkr']['a12m220']
+        ax.fill_between(xplot,ga_L-dga_L, ga_L+dga_L,color=gn,alpha=0.2)
+        ax.plot(xplot,ga_L,color='k',linestyle='--',label=r'NLO $\chi$PT prediction')
+        for ii,i in enumerate(i_fv):
+            gi = data['ga_b0'][i]
+            dgi = data['ga_bs'][:,i].std()
+            ax.errorbar(xL[ii],gi,yerr=dgi,color=gn,mec=gn,mfc=gn,marker=mkr)
+        ax.set_ylabel(r'$g_A$',fontsize=params_plot['fs'])
+        ax.set_xlabel(r'$e^{-m_\pi L} / \sqrt{m_\pi L}$',fontsize=params_plot['fs'])
+        ax.axis([0.,0.024,1.2025,1.3125])
+        ax.legend(loc=2,shadow=True,fancybox=True,fontsize=params_plot['fs'])
+        
     ############################
     # END                      #
     ############################
@@ -453,6 +495,17 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_a_ax,leg1)
         # finish plot
         finish_plot(args,params_chipt,params_plot,result,ga_a_ax,leg1,leg2)
+        ############################################
+        # gA vs L plot
+        ############################################
+        print('gA vs L: Taylor e_pi^2')
+        # initialize figure
+        plt.figure('gA vs L Taylor epsq',figsize=params_plot['fig_gldn'])
+        ga_L_ax = plt.axes(params_plot['mL_axes'])
+        result['xdict']['epi0'] = args.e0**2
+        result['xdict']['mL'] = np.arange(3,100.1,.1)
+        fv_plot(args,params_chipt,params_plot,result,data,ga_L_ax,select)
+        
     # display plot
     if args.plot:
         plt.ioff()
@@ -475,84 +528,5 @@ if __name__=='__main__':
     # plot result
     plot = plot_fit(args,params_chipt,params_plot,data,rdict)
 
-'''
-############################################
-# gA vs asq
-############################################
-fig += 1
-print('gA vs asq: Taylor e_pi^2, Order 1, Fig=%d' %fig)
-plt.figure(fig,figsize=fig_gldn)
-ga_asq_ax = plt.axes(ga_axes)
-leg1 = []
-leg2 = []
-aplot = np.arange(0,1.01,.01)
-xplot = aplot**2
-# physical pion mass plot
-ga_asq = fit.ga_epi(x0,epi_phys**2,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
-dga_asq = fit.dga_a(x0,epi_phys**2,aplot,c0,cov_lam[0:-1,0:-1],ca2=ca2,cm1=cm1,cm2=cm2)
-ga_asq_ax.fill_between(xplot,ga_asq-dga_asq,ga_asq+dga_asq,\
-    color=cont_color,alpha=a_cont)
-leg, = ga_asq_ax.fill(xplot,-100*np.ones_like(aplot),\
-    color=cont_color,alpha=a_cont,\
-    label=r'$g_A^{LQCD}(\epsilon_\pi^\textrm{phys},a/w_0)$')
-leg2.append(leg)
-# unphysical mpi plots
-esq310 = (epi_b0[0:3]**2).mean()
-esq220 = (epi_b0[3:7]**2).mean()
-esq130 = (epi_b0[7:]**2).mean()
-ga_plot310 = fit.ga_epi(x0,esq310,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
-ga_plot220 = fit.ga_epi(x0,esq220,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
-ga_plot130 = fit.ga_epi(x0,esq130,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
-ga_plot_m = [ga_plot310,ga_plot220,ga_plot130]
-ga_plot_lbl = [r'$g_A(\epsilon_\pi^{(310)},a/w_0)$',r'$g_A(\epsilon_\pi^{(220)},a/w_0)$',
-    r'$g_A(\epsilon_\pi^{(130)},a/w_0)$',r'$g_A(\epsilon_\pi,a=0.06)$']
-leg, = ga_asq_ax.plot(xplot,ga_plot310,color='k',linestyle='-.',alpha=0.5,
-    label=r'$g_A(\epsilon_\pi^{(310)},a/w_0)$')
-leg1.insert(0,leg)
-leg, = ga_asq_ax.plot(xplot,ga_plot220,color='k',linestyle='--',alpha=0.5,
-    label=r'$g_A(\epsilon_\pi^{(220)},a/w_0)$')
-leg1.insert(0,leg)
-leg, = ga_asq_ax.plot(xplot,ga_plot130,color='k',linestyle='-',alpha=0.5,
-    label=r'$g_A(\epsilon_\pi^{(130)},a/w_0)$')
-leg1.insert(0,leg)
 
-
-# add data points
-fv_shift = -.01
-for i,ens in enumerate(ensembles):
-    lbl = m_lbl[ens]
-    clr = e_clr[ens]
-    alpha = 1
-    mkr = e_mrkr[ens]
-    dfv = fit.dgaFV(epi_b0[i],mL[i],g0fv)
-    ai = aw0[ens]**2
-    dai = 2*aw0[ens]*daw0[ens]
-    gi = ga_b0[i]
-    dgi = ga_bs.std(axis=0)[i]
-    ga_asq_ax.errorbar(ai,gi-dfv,yerr=dgi,\
-        marker=mkr,color=clr,mec=clr,mfc=clr,alpha=alpha,\
-        linestyle='None',label=lbl)
-    leg = ga_asq_ax.errorbar(-ai,gi-dfv,yerr=dgi,\
-        marker=mkr,color='k',mec='k',mfc='k',alpha=alpha,\
-        linestyle='None',label=lbl)
-    if args.show_fv:
-        ga_asq_ax.errorbar(ai+fv_shift,gi,xerr=dai,yerr=dgi,\
-            marker=mkr,color='k',mec='k',mfc='None',alpha=0.5,linestyle='None')
-    if ens in m_i:
-        leg1.insert(3,leg)
-ga_asq_ax.set_xlabel(r'$(a/w_0)^2$',fontsize=fs)
-ga_asq_ax.set_ylabel(r'$g_A$',fontsize=fs)
-leg = ga_asq_ax.errorbar(0,ga_phys,yerr=dga_phys,\
-    marker='o',markersize=10,mec='k',mfc='None',color='k',alpha=1,linestyle='None',\
-    label=r'$g_A^{PDG}=%.4f(%s)$' %(ga_phys,str(dga_phys).split('0')[-1]))
-leg2.append(leg)
-
-ga_asq_ax.axis([args.asq_x[0],args.asq_x[1],args.asq_y[0],args.asq_y[1]])
-
-d_leg = ga_asq_ax.legend(handles=leg1,loc=4,numpoints=1,ncol=2,shadow=True,fancybox=True)
-plt.gca().add_artist(d_leg)
-
-ga_asq_ax.legend(handles=leg2,loc=3,numpoints=1,ncol=1,shadow=True,fancybox=True)
-ga_asq_ax.tick_params(axis='both', which='major', labelsize=14)
-'''
     

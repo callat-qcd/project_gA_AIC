@@ -118,5 +118,24 @@ def dga_epi(epi0,epi,a,c0,lam_cov,ca2=0,cm1=0,cm2=0,cam2=0,**kwargs):
     for i in range(len(ones)):
         g_err[i] = np.sqrt(np.dot(dgdl[:,i],np.dot(lam_cov,dgdl[:,i])))
     return g_err
-
-
+def dga_epi_fv(epi0,epi,epifv,a,mL,lam_cov,c0,g0fv,ca2=0,cm1=0,cm2=0,cam2=0,**kwargs):
+    # note taylor expansion epi can be episq if that is the expansion parameter
+    # and not necessarily the same as epi
+    dfv = 8./3 * epifv**2 * (3 * g0fv**2 * ga_f1(mL) + ga_f3(mL))
+    if   ca2 == 0 and cm1 == 0 and cm2 == 0 and cam2 == 0:
+        dgdl = np.array([1,dfv])
+    elif ca2 != 0 and cm1 == 0 and cm2 == 0 and cam2 == 0:
+        dgdl = np.array([1,a**2,dfv])
+    elif ca2 != 0 and cm1 != 0 and cm2 == 0 and cam2 == 0:
+        dgdl = np.array([1,epi-epi0,a**2,dfv])
+    elif ca2 != 0 and cm1 != 0 and cm2 == 0 and cam2 != 0:
+        dgdl = np.array([1,epi-epi0,a**2,(epi-epi0)*a**2,dfv])
+    elif ca2 != 0 and cm1 != 0 and cm2 != 0 and cam2 == 0:
+        dgdl = np.array([1,epi-epi0,(epi-epi0)**2,a**2,dfv])
+    elif ca2 != 0 and cm1 != 0 and cm2 != 0 and cam2 != 0:
+        dgdl = np.array([1,epi-epi0,(epi-epi0)**2,a**2,(epi-epi0)*a**2,dfv])
+    else:
+        print('unrecognized set of parameter options if dga_epi_fv')
+        raise SystemExit
+    g_err = np.sqrt(np.dot(dgdl,np.dot(lam_cov,dgdl)))
+    return g_err
