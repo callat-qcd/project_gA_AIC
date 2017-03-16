@@ -245,7 +245,6 @@ def chipt_fit(args,p,data):
         # central value
         tmp = CS.xdict.copy()
         tmp.update(ga_min.values)
-        #print tmp
         ga_fit = gafit.ga_epi(a=0,**tmp)
         # uncertainty - gA-infinite doesn't know about FV
         # so chop covariance matrix - g0fv is last parameter
@@ -256,9 +255,11 @@ def chipt_fit(args,p,data):
         if args.g0fv != None:
             print('g0fv prior = %f +- %f' %(args.g0fv[0],args.g0fv[1]))
         print('AICc = %.3f\n' %gafit.aicc(ga_min.fval,CS.p['l_d'],len(ga_min.values)))
-        return {'ga_fit':ga_fit, 'dga_fit':dga_fit, 'CS':CS, 'ga_min':ga_min, 'cov_lam':cov_lam}
+        return {'ga_fit':ga_fit, 'dga_fit':dga_fit, 'xdict':CS.xdict.copy(), 'ga_min':ga_min, 'cov_lam':cov_lam}
     # initialized ChiSq class
     CS = ChiSq(args,p,data)
+    # collect result
+    rdict = dict()
     # choose fit function
     if args.fits in ['all','taylor_esq_1']:
         select = 'taylor_esq_1'
@@ -266,9 +267,111 @@ def chipt_fit(args,p,data):
         # do the minimization
         ga_min, cov_lam = gafit.minimize(CS.select_chisq(select),ini_vals(select),p['l_d'])
         # print outputs
-        result = print_output(CS,ga_min,cov_lam,select)
-        return result
+        rdict[select] = print_output(CS,ga_min,cov_lam,select)
+    return rdict
 
+def plot_fit(args,params_chipt,params_plot,data,rdict):
+    ############################
+    # FUNCTIONS FOR plot_fit() #
+    ############################
+    def continuum_plot(args,params_plot,result,ax,legend):
+        ga_plot = gafit.ga_epi(result['xdict']['epi0'],result['xdict']['epi_plot'],0,**result['ga_min'].values)
+        dga_plot = gafit.dga_epi(epi0=result['xdict']['epi0'],epi=result['xdict']['epi_plot'],a=0,lam_cov=result['cov_lam'][0:-1,0:-1],**result['ga_min'].values)
+        ax.fill_between(result['xdict']['xplot'],ga_plot-dga_plot,ga_plot+dga_plot,\
+            color=params_plot['cont_color'],alpha=params_plot['a_cont'])
+        leg, = ax.fill(result['xdict']['xplot'],-100*np.ones_like(result['xdict']['epi_plot']),\
+            color=params_plot['cont_color'],alpha=params_plot['a_cont'],\
+            label=r'$g_A^{LQCD}(\epsilon_\pi,a=0)$')
+        legend.append(leg)
+        return legend
+    def discrete_plot(args,params_plot,result,ax,legend):
+        ga_plot15 = gafit.ga_epi(result['xdict']['epi0'],result['xdict']['epi_plot'],params_chipt['aw0']['a15m310'],**result['ga_min'].values)
+        ga_plot12 = gafit.ga_epi(result['xdict']['epi0'],result['xdict']['epi_plot'],params_chipt['aw0']['a12m310'],**result['ga_min'].values)
+        ga_plot09 = gafit.ga_epi(result['xdict']['epi0'],result['xdict']['epi_plot'],params_chipt['aw0']['a09m310'],**result['ga_min'].values)
+        ga_plot_a = [ga_plot15,ga_plot12,ga_plot09]
+        ga_plot_lbl = [r'$g_A(\epsilon_\pi,a=0.15)$',r'$g_A(\epsilon_\pi,a=0.12)$',
+            r'$g_A(\epsilon_\pi,a=0.09)$']
+        leg, = ax.plot(result['xdict']['xplot'],ga_plot15,color=params_plot['e_clr']['a15m310'],alpha=0.5,
+            label=r'$g_A(\epsilon_\pi,a=0.15)$')
+        legend.insert(0,leg)
+        leg, = ax.plot(result['xdict']['xplot'],ga_plot12,color=params_plot['e_clr']['a12m310'],alpha=0.5,
+            label=r'$g_A(\epsilon_\pi,a=0.12)$')
+        legend.insert(0,leg)
+        leg, = ax.plot(result['xdict']['xplot'],ga_plot09,color=params_plot['e_clr']['a09m310'],alpha=0.5,
+            label=r'$g_A(\epsilon_\pi,a=0.09)$')
+        legend.insert(0,leg)
+        return legend
+    def data_plot(args,params_chipt,params_plot,data,result,ax,legend):
+        fv_shift = -.003
+        for i,ens in enumerate(params_chipt['ensembles']):
+            lbl = params_plot['a_lbl'][ens]
+            clr = params_plot['e_clr'][ens]
+            alpha = 1
+            mkr = params_plot['e_mrkr'][ens]
+            ei = data['epi_b0'][i]
+            dei = data['epi_bs'].std(axis=0)[i]
+            dfv = gafit.dgaFV(ei,params_chipt['mpiL'][ens],result['ga_min'].values['g0fv'])
+            gi = data['ga_b0'][i]
+            dgi = data['ga_bs'][:,i].std()
+            leg = ax.errorbar(ei,gi-dfv,xerr=dei,yerr=dgi,\
+                marker=mkr,color=clr,mec=clr,mfc=clr,alpha=alpha,\
+                linestyle='None',label=lbl)
+            if args.show_fv:
+                ax.errorbar(ei+fv_shift,gi,xerr=dei,yerr=dgi,\
+                    marker=mkr,color='k',mec='k',mfc='None',alpha=0.5,linestyle='None')
+            if ens in params_plot['a_i']:
+                legend.insert(3,leg)
+        return legend
+    def finish_plot(args,params_chipt,params_plot,ax,leg1,leg2):
+        ax.set_xlabel(r'$\epsilon_\pi = m_\pi /(4\pi F_\pi)$',fontsize=params_plot['fs'])
+        ax.set_ylabel(r'$g_A$',fontsize=params_plot['fs'])
+        leg = ax.errorbar(params_chipt['epi_phys'],params_chipt['ga_phys'],\
+            yerr=params_chipt['dga_phys'],\
+            marker='o',markersize=10,mec='k',mfc='None',color='k',alpha=1,linestyle='None',\
+            label=r'$g_A^{PDG}=%.4f(%s)$' \
+                %(params_chipt['ga_phys'],str(params_chipt['dga_phys']).split('0')[-1]))
+        leg2.append(leg)
+        ax.vlines(params_chipt['epi_phys'],0.5,1.6,linestyle='--',color='k')
+        ax.axis([args.epi_x[0],args.epi_x[1],args.epi_y[0],args.epi_y[1]])
+        d_leg = ga_mpi_ax.legend(handles=leg1,loc=4,numpoints=1,ncol=2,shadow=True,fancybox=True)
+        plt.gca().add_artist(d_leg)
+        ax.legend(handles=leg2,loc=3,numpoints=1,ncol=1,shadow=True,fancybox=True)
+        ax.tick_params(axis='both', which='major', labelsize=14)
+        return 0
+    ############################
+    # END                      #
+    ############################
+    if args.fits in ['all','taylor_esq_1'] and args.plot:
+        # select results
+        select = 'taylor_esq_1'
+        result = rdict[select].copy()
+        ############################################
+        # gA vs e_pi plot
+        ############################################
+        print('gA vs epi: Taylor e_pi^2')
+        # initialize figure
+        plt.figure('gA vs epi: Taylor e_pi^2',figsize=params_plot['fig_gldn'])
+        ga_mpi_ax = plt.axes(params_plot['epi_axes'])
+        leg1 = []
+        leg2 = []
+        # define x dependence
+        result['xdict']['epi_plot'] = np.arange(0.001,0.41,.001)**2
+        result['xdict']['xplot'] = np.arange(0.001,0.41,.001)
+        # continuum limit plot
+        leg2 = continuum_plot(args,params_plot,result,ga_mpi_ax,leg2)
+        # finite a plots
+        leg1 = discrete_plot(args,params_plot,result,ga_mpi_ax,leg1)
+        # add data points
+        leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_mpi_ax,leg1)
+        # finish plot
+        finish_plot(args,params_chipt,params_plot,ga_mpi_ax,leg1,leg2)
+    # display plot
+    if args.plot:
+        plt.ioff()
+        if run_from_ipython():
+            plt.show(block=False)
+        else:
+            plt.show()
 
 if __name__=='__main__':
     # parse keyboard inputs
@@ -280,178 +383,88 @@ if __name__=='__main__':
     # read data
     data = read_data(args,params_chipt)
     # fit data
-    result = chipt_fit(args,params_chipt,data)
+    rdict = chipt_fit(args,params_chipt,data)
     # plot result
-    #plot = plot_fit(args,params_plot,result)
-    if args.fits in ['all','taylor_esq_1'] and args.plot:
-        ############################################
-        # gA vs e_pi plot
-        ############################################
-        fig = 1
-        print('gA vs epi: Taylor e_pi^2, Order 1, Fig=%d' %fig)
-        CS = result['CS']
-        ga_min = result['ga_min']
-        cov_lam = result['cov_lam']
-        print('gA vs e_pi: Taylor e_pi^2, Order 1, Fig=%d' %fig)
-        plt.figure(fig,figsize=params_plot['fig_gldn'])
-        ga_mpi_ax = plt.axes(params_plot['epi_axes'])
-        leg1 = []
-        leg2 = []
-        epi_plot = np.arange(0.001,0.41,.001)
-        xplot = epi_plot
-        # continuum limit plot
-        ga_plot = gafit.ga_epi(CS.x0,epi_plot**2,0,**ga_min.values)
-        dga_plot = gafit.dga_epi(epi0=CS.x0,epi=epi_plot**2,a=0,lam_cov=cov_lam[0:-1,0:-1],**ga_min.values)
-        ga_mpi_ax.fill_between(xplot,ga_plot-dga_plot,ga_plot+dga_plot,\
-            color=params_plot['cont_color'],alpha=params_plot['a_cont'])
-        leg, = ga_mpi_ax.fill(xplot,-100*np.ones_like(epi_plot),\
-            color=params_plot['cont_color'],alpha=params_plot['a_cont'],\
-            label=r'$g_A^{LQCD}(\epsilon_\pi,a=0)$')
-        leg2.append(leg)
-        #tmp = gafit.ga_epi(CS.x0,params_chipt['epi_phys']**2,0,**ga_min.values)
-        #dtmp = gafit.dga_epi(epi0=CS.x0,epi=params_chipt['epi_phys']**2,a=0,lam_cov=cov_lam[0:-1,0:-1],**ga_min.values)
-        #print tmp,dtmp
-        #ga_mpi_ax.errorbar(params_chipt['epi_phys'],tmp,yerr=dtmp,marker='*')
-        # finite a plots
-        ga_plot15 = gafit.ga_epi(CS.x0,epi_plot**2,params_chipt['aw0']['a15m310'],**ga_min.values)
-        ga_plot12 = gafit.ga_epi(CS.x0,epi_plot**2,params_chipt['aw0']['a12m310'],**ga_min.values)
-        ga_plot09 = gafit.ga_epi(CS.x0,epi_plot**2,params_chipt['aw0']['a09m310'],**ga_min.values)
-        ga_plot_a = [ga_plot15,ga_plot12,ga_plot09]
-        ga_plot_lbl = [r'$g_A(\epsilon_\pi,a=0.15)$',r'$g_A(\epsilon_\pi,a=0.12)$',
-            r'$g_A(\epsilon_\pi,a=0.09)$']
-        leg, = ga_mpi_ax.plot(xplot,ga_plot15,color=params_plot['e_clr']['a15m310'],alpha=0.5,
-            label=r'$g_A(\epsilon_\pi,a=0.15)$')
-        leg1.insert(0,leg)
-        leg, = ga_mpi_ax.plot(xplot,ga_plot12,color=params_plot['e_clr']['a12m310'],alpha=0.5,
-            label=r'$g_A(\epsilon_\pi,a=0.12)$')
-        leg1.insert(0,leg)
-        leg, = ga_mpi_ax.plot(xplot,ga_plot09,color=params_plot['e_clr']['a09m310'],alpha=0.5,
-            label=r'$g_A(\epsilon_\pi,a=0.09)$')
-        leg1.insert(0,leg)
+    plot = plot_fit(args,params_chipt,params_plot,data,rdict)
 
-        # add data points
-        fv_shift = -.003
-        for i,ens in enumerate(params_chipt['ensembles']):
-            lbl = params_plot['a_lbl'][ens]
-            clr = params_plot['e_clr'][ens]
-            alpha = 1
-            mkr = params_plot['e_mrkr'][ens]
-            ei = data['epi_b0'][i]
-            dei = data['epi_bs'].std(axis=0)[i]
-            dfv = gafit.dgaFV(ei,params_chipt['mpiL'][ens],ga_min.values['g0fv'])
-            gi = data['ga_b0'][i]
-            dgi = data['ga_bs'][:,i].std()
-            leg = ga_mpi_ax.errorbar(ei,gi-dfv,xerr=dei,yerr=dgi,\
-                marker=mkr,color=clr,mec=clr,mfc=clr,alpha=alpha,\
-                linestyle='None',label=lbl)
-            if args.show_fv:
-                ga_mpi_ax.errorbar(ei+fv_shift,gi,xerr=dei,yerr=dgi,\
-                    marker=mkr,color='k',mec='k',mfc='None',alpha=0.5,linestyle='None')
-            if ens in params_plot['a_i']:
-                leg1.insert(3,leg)
-        ga_mpi_ax.set_xlabel(r'$\epsilon_\pi = m_\pi /(4\pi F_\pi)$',fontsize=params_plot['fs'])
-        ga_mpi_ax.set_ylabel(r'$g_A$',fontsize=params_plot['fs'])
-        leg = ga_mpi_ax.errorbar(params_chipt['epi_phys'],params_chipt['ga_phys'],\
-            yerr=params_chipt['dga_phys'],\
-            marker='o',markersize=10,mec='k',mfc='None',color='k',alpha=1,linestyle='None',\
-            label=r'$g_A^{PDG}=%.4f(%s)$' \
-                %(params_chipt['ga_phys'],str(params_chipt['dga_phys']).split('0')[-1]))
-        leg2.append(leg)
-        ga_mpi_ax.vlines(params_chipt['epi_phys'],0.5,1.6,linestyle='--',color='k')
-        ga_mpi_ax.axis([args.epi_x[0],args.epi_x[1],args.epi_y[0],args.epi_y[1]])
-        d_leg = ga_mpi_ax.legend(handles=leg1,loc=4,numpoints=1,ncol=2,shadow=True,fancybox=True)
-        plt.gca().add_artist(d_leg)
-        ga_mpi_ax.legend(handles=leg2,loc=3,numpoints=1,ncol=1,shadow=True,fancybox=True)
-        ga_mpi_ax.tick_params(axis='both', which='major', labelsize=14)
-
-        '''
-        ############################################
-        # gA vs asq
-        ############################################
-        fig += 1
-        print('gA vs asq: Taylor e_pi^2, Order 1, Fig=%d' %fig)
-        plt.figure(fig,figsize=fig_gldn)
-        ga_asq_ax = plt.axes(epi_axes)
-        leg1 = []
-        leg2 = []
-        aplot = np.arange(0,1.01,.01)
-        xplot = aplot**2
-        # physical pion mass plot
-        ga_asq = fit.ga_epi(x0,epi_phys**2,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
-        dga_asq = fit.dga_a(x0,epi_phys**2,aplot,c0,cov_lam[0:-1,0:-1],ca2=ca2,cm1=cm1,cm2=cm2)
-        ga_asq_ax.fill_between(xplot,ga_asq-dga_asq,ga_asq+dga_asq,\
-            color=cont_color,alpha=a_cont)
-        leg, = ga_asq_ax.fill(xplot,-100*np.ones_like(aplot),\
-            color=cont_color,alpha=a_cont,\
-            label=r'$g_A^{LQCD}(\epsilon_\pi^\textrm{phys},a/w_0)$')
-        leg2.append(leg)
-        # unphysical mpi plots
-        esq310 = (epi_b0[0:3]**2).mean()
-        esq220 = (epi_b0[3:7]**2).mean()
-        esq130 = (epi_b0[7:]**2).mean()
-        ga_plot310 = fit.ga_epi(x0,esq310,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
-        ga_plot220 = fit.ga_epi(x0,esq220,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
-        ga_plot130 = fit.ga_epi(x0,esq130,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
-        ga_plot_m = [ga_plot310,ga_plot220,ga_plot130]
-        ga_plot_lbl = [r'$g_A(\epsilon_\pi^{(310)},a/w_0)$',r'$g_A(\epsilon_\pi^{(220)},a/w_0)$',
-            r'$g_A(\epsilon_\pi^{(130)},a/w_0)$',r'$g_A(\epsilon_\pi,a=0.06)$']
-        leg, = ga_asq_ax.plot(xplot,ga_plot310,color='k',linestyle='-.',alpha=0.5,
-            label=r'$g_A(\epsilon_\pi^{(310)},a/w_0)$')
-        leg1.insert(0,leg)
-        leg, = ga_asq_ax.plot(xplot,ga_plot220,color='k',linestyle='--',alpha=0.5,
-            label=r'$g_A(\epsilon_\pi^{(220)},a/w_0)$')
-        leg1.insert(0,leg)
-        leg, = ga_asq_ax.plot(xplot,ga_plot130,color='k',linestyle='-',alpha=0.5,
-            label=r'$g_A(\epsilon_\pi^{(130)},a/w_0)$')
-        leg1.insert(0,leg)
+'''
+############################################
+# gA vs asq
+############################################
+fig += 1
+print('gA vs asq: Taylor e_pi^2, Order 1, Fig=%d' %fig)
+plt.figure(fig,figsize=fig_gldn)
+ga_asq_ax = plt.axes(epi_axes)
+leg1 = []
+leg2 = []
+aplot = np.arange(0,1.01,.01)
+xplot = aplot**2
+# physical pion mass plot
+ga_asq = fit.ga_epi(x0,epi_phys**2,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
+dga_asq = fit.dga_a(x0,epi_phys**2,aplot,c0,cov_lam[0:-1,0:-1],ca2=ca2,cm1=cm1,cm2=cm2)
+ga_asq_ax.fill_between(xplot,ga_asq-dga_asq,ga_asq+dga_asq,\
+    color=cont_color,alpha=a_cont)
+leg, = ga_asq_ax.fill(xplot,-100*np.ones_like(aplot),\
+    color=cont_color,alpha=a_cont,\
+    label=r'$g_A^{LQCD}(\epsilon_\pi^\textrm{phys},a/w_0)$')
+leg2.append(leg)
+# unphysical mpi plots
+esq310 = (epi_b0[0:3]**2).mean()
+esq220 = (epi_b0[3:7]**2).mean()
+esq130 = (epi_b0[7:]**2).mean()
+ga_plot310 = fit.ga_epi(x0,esq310,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
+ga_plot220 = fit.ga_epi(x0,esq220,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
+ga_plot130 = fit.ga_epi(x0,esq130,aplot,c0,ca2=ca2,cm1=cm1,cm2=cm2)
+ga_plot_m = [ga_plot310,ga_plot220,ga_plot130]
+ga_plot_lbl = [r'$g_A(\epsilon_\pi^{(310)},a/w_0)$',r'$g_A(\epsilon_\pi^{(220)},a/w_0)$',
+    r'$g_A(\epsilon_\pi^{(130)},a/w_0)$',r'$g_A(\epsilon_\pi,a=0.06)$']
+leg, = ga_asq_ax.plot(xplot,ga_plot310,color='k',linestyle='-.',alpha=0.5,
+    label=r'$g_A(\epsilon_\pi^{(310)},a/w_0)$')
+leg1.insert(0,leg)
+leg, = ga_asq_ax.plot(xplot,ga_plot220,color='k',linestyle='--',alpha=0.5,
+    label=r'$g_A(\epsilon_\pi^{(220)},a/w_0)$')
+leg1.insert(0,leg)
+leg, = ga_asq_ax.plot(xplot,ga_plot130,color='k',linestyle='-',alpha=0.5,
+    label=r'$g_A(\epsilon_\pi^{(130)},a/w_0)$')
+leg1.insert(0,leg)
 
 
-        # add data points
-        fv_shift = -.01
-        for i,ens in enumerate(ensembles):
-            lbl = m_lbl[ens]
-            clr = e_clr[ens]
-            alpha = 1
-            mkr = e_mrkr[ens]
-            dfv = fit.dgaFV(epi_b0[i],mL[i],g0fv)
-            ai = aw0[ens]**2
-            dai = 2*aw0[ens]*daw0[ens]
-            gi = ga_b0[i]
-            dgi = ga_bs.std(axis=0)[i]
-            ga_asq_ax.errorbar(ai,gi-dfv,yerr=dgi,\
-                marker=mkr,color=clr,mec=clr,mfc=clr,alpha=alpha,\
-                linestyle='None',label=lbl)
-            leg = ga_asq_ax.errorbar(-ai,gi-dfv,yerr=dgi,\
-                marker=mkr,color='k',mec='k',mfc='k',alpha=alpha,\
-                linestyle='None',label=lbl)
-            if args.show_fv:
-                ga_asq_ax.errorbar(ai+fv_shift,gi,xerr=dai,yerr=dgi,\
-                    marker=mkr,color='k',mec='k',mfc='None',alpha=0.5,linestyle='None')
-            if ens in m_i:
-                leg1.insert(3,leg)
-        ga_asq_ax.set_xlabel(r'$(a/w_0)^2$',fontsize=fs)
-        ga_asq_ax.set_ylabel(r'$g_A$',fontsize=fs)
-        leg = ga_asq_ax.errorbar(0,ga_phys,yerr=dga_phys,\
-            marker='o',markersize=10,mec='k',mfc='None',color='k',alpha=1,linestyle='None',\
-            label=r'$g_A^{PDG}=%.4f(%s)$' %(ga_phys,str(dga_phys).split('0')[-1]))
-        leg2.append(leg)
+# add data points
+fv_shift = -.01
+for i,ens in enumerate(ensembles):
+    lbl = m_lbl[ens]
+    clr = e_clr[ens]
+    alpha = 1
+    mkr = e_mrkr[ens]
+    dfv = fit.dgaFV(epi_b0[i],mL[i],g0fv)
+    ai = aw0[ens]**2
+    dai = 2*aw0[ens]*daw0[ens]
+    gi = ga_b0[i]
+    dgi = ga_bs.std(axis=0)[i]
+    ga_asq_ax.errorbar(ai,gi-dfv,yerr=dgi,\
+        marker=mkr,color=clr,mec=clr,mfc=clr,alpha=alpha,\
+        linestyle='None',label=lbl)
+    leg = ga_asq_ax.errorbar(-ai,gi-dfv,yerr=dgi,\
+        marker=mkr,color='k',mec='k',mfc='k',alpha=alpha,\
+        linestyle='None',label=lbl)
+    if args.show_fv:
+        ga_asq_ax.errorbar(ai+fv_shift,gi,xerr=dai,yerr=dgi,\
+            marker=mkr,color='k',mec='k',mfc='None',alpha=0.5,linestyle='None')
+    if ens in m_i:
+        leg1.insert(3,leg)
+ga_asq_ax.set_xlabel(r'$(a/w_0)^2$',fontsize=fs)
+ga_asq_ax.set_ylabel(r'$g_A$',fontsize=fs)
+leg = ga_asq_ax.errorbar(0,ga_phys,yerr=dga_phys,\
+    marker='o',markersize=10,mec='k',mfc='None',color='k',alpha=1,linestyle='None',\
+    label=r'$g_A^{PDG}=%.4f(%s)$' %(ga_phys,str(dga_phys).split('0')[-1]))
+leg2.append(leg)
 
-        ga_asq_ax.axis([args.asq_x[0],args.asq_x[1],args.asq_y[0],args.asq_y[1]])
+ga_asq_ax.axis([args.asq_x[0],args.asq_x[1],args.asq_y[0],args.asq_y[1]])
 
-        d_leg = ga_asq_ax.legend(handles=leg1,loc=4,numpoints=1,ncol=2,shadow=True,fancybox=True)
-        plt.gca().add_artist(d_leg)
+d_leg = ga_asq_ax.legend(handles=leg1,loc=4,numpoints=1,ncol=2,shadow=True,fancybox=True)
+plt.gca().add_artist(d_leg)
 
-        ga_asq_ax.legend(handles=leg2,loc=3,numpoints=1,ncol=1,shadow=True,fancybox=True)
-        ga_asq_ax.tick_params(axis='both', which='major', labelsize=14)
-        '''
-    
-    #c51_data.close()
-    
-    if args.plot:
-        plt.ioff()
-        #print 'run_from_ipython', run_from_ipython()
-        if run_from_ipython():
-            plt.show(block=False)
-        else:
-            plt.show()
+ga_asq_ax.legend(handles=leg2,loc=3,numpoints=1,ncol=1,shadow=True,fancybox=True)
+ga_asq_ax.tick_params(axis='both', which='major', labelsize=14)
+'''
     
