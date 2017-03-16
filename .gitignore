@@ -1,3 +1,6 @@
+# ignore hdf5 files
+.hdf5
+
 # vim stuff
 .swp
 
