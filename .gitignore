@@ -1,12 +1,12 @@
 # ignore hdf5 files
-.hdf5
-.h5
+*.hdf5
+*.h5
 
 # vim stuff
-.swp
+*.swp
 
 # python runtime
-.pyc
+*.pyc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
