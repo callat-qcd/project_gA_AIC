@@ -12,8 +12,7 @@ def aicc(chisq,l_d,l_par):
 def minimize(chisq,ini_vals):
     ga_min = mn.Minuit(chisq, pedantic=False, print_level=0, **ini_vals)
     ga_min.migrad()
-    cov = np.array(ga_min.matrix(correlation=False,skip_fixed=True))
-    return ga_min, cov
+    return ga_min
 
 ########################################
 #  gA SU(2) ChiPT vs e_pi = mpi / 4piFpi

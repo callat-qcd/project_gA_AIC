@@ -234,7 +234,7 @@ class ChiSq():
         return chisq
 
 def chipt_fit(args,p,data):
-    def print_output(CS,ga_min,cov_lam,select):
+    def print_output(CS,ga_min,select):
         dof = CS.p['l_d'] - len(ga_min.values)
         print "chi^2 = %.4f, dof = %d, Q = %.4f" %(ga_min.fval,dof,gafit.Q(ga_min.fval,dof))
         for p in ga_min.parameters:
@@ -243,7 +243,7 @@ def chipt_fit(args,p,data):
         # central value
         x0 = CS.x0
         xphys = CS.xphys
-        cov = cov_lam[0:-1,0:-1]
+        cov = np.array(ga_min.matrix(correlation=False,skip_fixed=True))[0:-1,0:-1]
         # uncertainty - gA-infinite doesn't know about FV
         # so chop covariance matrix - g0fv is last parameter
         if select in ['taylor_esq_1']:
@@ -256,7 +256,7 @@ def chipt_fit(args,p,data):
         if args.g0fv != None:
             print('g0fv prior = %f +- %f' %(args.g0fv[0],args.g0fv[1]))
         print('AICc = %.3f\n' %gafit.aicc(ga_min.fval,CS.p['l_d'],len(ga_min.values)))
-        return {'ga_fit':ga_fit, 'dga_fit':dga_fit, 'xdict':CS.xdict.copy(), 'ga_min':ga_min, 'cov_lam':cov_lam}
+        return {'ga_fit':ga_fit, 'dga_fit':dga_fit, 'xdict':CS.xdict.copy(), 'ga_min':ga_min}
     # initialized ChiSq class
     CS = ChiSq(args,p,data)
     # collect result
@@ -266,9 +266,9 @@ def chipt_fit(args,p,data):
         select = 'taylor_esq_1'
         print('gA = c0 + c1*(epi**2-e0**2) + ca2 * (a/w0)**2\n')
         # do the minimization
-        ga_min, cov_lam = gafit.minimize(CS.select_chisq(select),ini_vals(select))
+        ga_min = gafit.minimize(CS.select_chisq(select),ini_vals(select))
         # print outputs
-        rdict[select] = print_output(CS,ga_min,cov_lam,select)
+        rdict[select] = print_output(CS,ga_min,select)
     return rdict
 
 def plot_fit(args,params_chipt,params_plot,data,rdict):
@@ -287,7 +287,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         x = result['xdict']['xplot']
         # taylor fit needs g0fv, which infinite volume function doesn't know about
         # so chop of the last element (g0fv) of corrleation matrix
-        cov = result['cov_lam'][0:-1,0:-1]
+        cov = np.array(result['ga_min'].matrix(correlation=False,skip_fixed=True))[0:-1,0:-1]
         ga_plot = gafit.ga_epi(e0,epi,0,**result['ga_min'].values)
         dga_plot = gafit.dga_epi(epi0=e0,epi=epi,a=0,lam_cov=cov,**result['ga_min'].values)
         ax.fill_between(x,ga_plot-dga_plot,ga_plot+dga_plot,\
@@ -301,7 +301,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         e0 = result['xdict']['epi0']
         epi = result['xdict']['epi_plot']
         x = result['xdict']['xplot']
-        cov = result['cov_lam'][0:-1,0:-1]# see comment above for chopped cov
+        cov = np.array(result['ga_min'].matrix(correlation=False,skip_fixed=True))[0:-1,0:-1]
         ga_plot15 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a15m310'],**result['ga_min'].values)
         ga_plot12 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a12m310'],**result['ga_min'].values)
         ga_plot09 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a09m310'],**result['ga_min'].values)
