@@ -9,22 +9,10 @@ def Q(chisq,dof):
     return spsp.gammaincc(0.5*dof,0.5*chisq)
 def aicc(chisq,l_d,l_par):
     return 2*l_par + chisq + 2.*(l_par+1)*(l_par+2)/(l_d -l_par -2)
-<<<<<<< HEAD
-def minimize(chisq,ini_vals,l_d):
-    ga_min = mn.Minuit(chisq, pedantic=False, print_level=0, **ini_vals)
-    ga_min.migrad()
-    dof = l_d - len(ga_min.values)
-    print "chi^2 = %.4f, dof = %d, Q = %.4f" %(ga_min.fval,dof,Q(ga_min.fval,dof))
-    for p in ga_min.parameters:
-        print '  %s = %.4f +- %.4f' %(p,ga_min.values[p],ga_min.errors[p])
-    cov = np.array(ga_min.matrix(correlation=False,skip_fixed=True))
-    return ga_min, cov
-=======
 def minimize(chisq,ini_vals):
     ga_min = mn.Minuit(chisq, pedantic=False, print_level=0, **ini_vals)
     ga_min.migrad()
     return ga_min
->>>>>>> c6283814fb1ec722e6fababa11d417b5412baa74
 
 ########################################
 #  gA SU(2) ChiPT vs e_pi = mpi / 4piFpi
@@ -107,32 +95,27 @@ def ga_epi(epi0,epi,a,c0,ca2=0,cm1=0,cm2=0,cam2=0,**kwargs):
         ga += cam2 * (epi - epi0)**2 * a**2
     return ga
 def dga_epi(epi0,epi,a,c0,lam_cov,ca2=0,cm1=0,cm2=0,cam2=0,**kwargs):
+    if type(epi) != np.ndarray and type(a) == np.ndarray:
+        ones = np.ones_like(a)
+    elif type(a) != np.ndarray and type(epi) == np.ndarray:
+        ones = np.ones_like(epi)
+    else:
+        print('a or epi needs to be an int/float and the other is a numpy array')
+        raise SystemExit
     if ca2 == 0 and cm1 == 0 and cm2 == 0 and cam2 == 0:
-        dgdl = np.array([np.ones_like(epi)])
+        dgdl = np.array([ones])
     elif ca2 != 0 and cm1 == 0 and cm2 == 0 and cam2 == 0:
-        dgdl = np.array([np.ones_like(epi),a**2])
+        dgdl = np.array([ones,ones*a**2])
     elif ca2 != 0 and cm1 != 0 and cm2 == 0 and cam2 == 0:
-        dgdl = np.array([np.ones_like(epi),epi-epi0,a**2])
+        dgdl = np.array([ones,ones*epi-epi0,ones*a**2])
     elif ca2 != 0 and cm1 != 0 and cam2 != 0 and cm2 == 0:
-        dgdl = np.array([np.ones_like(epi),epi-epi0,a**2,(epi-epi0)*a**2])
+        dgdl = np.array([ones,ones*epi-epi0,ones*a**2,ones*(epi-epi0)*a**2])
     elif ca2 != 0 and cm1 == 0 and cam2 != 0 and cm2 == 0:
-        dgdl = np.array([np.ones_like(epi),a**2,(epi-epi0)*a**2])
+        dgdl = np.array([ones,ones*a**2,ones*(epi-epi0)*a**2])
     else:
-        dgdl = np.array([np.ones_like(epi),epi-epi0,(epi-epi0)**2,a**2])
-    g_err = np.sqrt(np.dot(dgdl,np.dot(lam_cov,dgdl)))
-    return g_err
-def dga_a(epi0,epi,a,c0,lam_cov,ca2=0,cm1=0,cm2=0,**kwargs):
-    if ca2 == 0 and cm1 == 0 and cm2 == 0:
-        dgdl = np.array([np.ones_like(a)])
-    elif ca2 != 0 and cm1 == 0 and cm2 == 0:
-        dgdl = np.array([np.ones_like(a),a**2])
-    elif ca2 != 0 and cm1 != 0 and cm2 == 0:
-        dgdl = np.array([np.ones_like(a),np.ones_like(a)*(epi-epi0),a**2])
-    else:
-        dgdl = np.array([np.ones_like(a),\
-            np.ones_like(a)*(epi-epi0),np.ones_like(a)*(epi-epi0)**2,a**2])
-    g_err = np.ones_like(a)
-    for i,ai in enumerate(a):
+        dgdl = np.array([ones,ones*epi-epi0,ones*(epi-epi0)**2,ones*a**2])
+    g_err = ones
+    for i in range(len(ones)):
         g_err[i] = np.sqrt(np.dot(dgdl[:,i],np.dot(lam_cov,dgdl[:,i])))
     return g_err
 
