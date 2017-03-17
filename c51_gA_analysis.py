@@ -3,7 +3,7 @@ This file performs the extrapolation analysis for the gA results using MDWF on H
 Required Python libraries/software
     numpy
     scipy
-    matplotlib
+    matplotlib (assume latex is used to render fonts)
     pytables (tables)
     iminuit
 """
@@ -51,7 +51,7 @@ def parse_input():
         help='add e_pi offset (e0) for Taylor expansion fits [%(default)s]')
     parser.add_argument('--bs',default=False,action='store_true',\
         help='loop over bootstraps? [%(default)s]')
-    parser.add_argument('--error_x',default=True,action='store_false',\
+    parser.add_argument('--error_epi',default=True,action='store_false',\
         help='include error in "x" parameters in analysis? [%(default)s]')
     parser.add_argument('--Nbs',type=int,action='store',\
         help='How many bootstrap samples? [default=All]')
@@ -212,17 +212,22 @@ class ChiSq():
         self.xphys = self.p['epi_phys']**2
         self.xdict = {'epi0':self.x0, 'epi':self.xphys}
         chisq = 0.
-        y = self.ga_bs.mean(axis=0)
-        x = (self.epi_bs**2).mean(axis=0)
+        y = self.ga_b0
+        x = self.epi_b0**2
+        ybs = self.ga_bs.mean(axis=0)
+        xbs = (self.epi_bs**2).mean(axis=0)
         cdict = {'c0':c0, 'ca2':ca2, 'cm1':cm1}
-        f = gafit.ga_epi(self.x0,x,self.p['xa'],**cdict)
+        f   = gafit.ga_epi(self.x0,x,self.p['xa'],**cdict)
+        fbs = gafit.ga_epi(self.x0,xbs,self.p['xa'],**cdict)
         for i,ens in enumerate(self.p['ensembles']):
-            f[i] += gafit.dgaFV(self.epi_b0[i],self.p['mL'][i],g0fv)
-        if self.args.error_x:
+            f[i]   += gafit.dgaFV(self.epi_b0[i],self.p['mL'][i],g0fv)
+            fbs[i] += gafit.dgaFV(self.epi_b0[i],self.p['mL'][i],g0fv)
+        # need to make switch handle error_epi, error_mpi, error_a separately
+        if self.args.error_epi:
             cov = np.zeros([self.p['Nbs'],self.p['l_d']])
             for i,ens in enumerate(self.p['ensembles']):
-                dy = self.ga_bs[:,i] - y[i]
-                df = gafit.ga_epi(self.x0,(self.epi_bs**2)[:,i],self.p['xa'][i],c0,ca2=ca2,cm1=cm1) - f[i]
+                dy = self.ga_bs[:,i] - ybs[i]
+                df = gafit.ga_epi(self.x0,(self.epi_bs**2)[:,i],self.p['xa'][i],c0,ca2=ca2,cm1=cm1) - fbs[i]
                 df += gafit.dgaFV(self.epi_bs[:,i],self.p['mL'][i],g0fv)
                 cov[:,i]  = ( dy - df )**2
             cov = (1./self.p['Nbs']) * np.sum(cov,axis=0)
