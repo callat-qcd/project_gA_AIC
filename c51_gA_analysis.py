@@ -20,6 +20,7 @@ try:
     import tables as h5
     import iminuit as mn
     import ga_fit_funcs as gafit
+    import sqlite_store as sql
     import tqdm
 except ImportError as e:
     print type(e)
@@ -121,6 +122,9 @@ def chipt_parameters():
         mL[i] = p['mpiL'][ens]
     p['xa'] = xa
     p['mL'] = mL
+    # sqlite parameters
+    p['dbname'] = 'callat_ga.sqlite'
+    p['tblname'] = 'xcont'
     return p
 
 def plotting_parameters():
@@ -256,8 +260,8 @@ def chipt_fit(args,p,data):
     def print_output(CS,ga_min,select):
         dof = CS.p['l_d'] - len(ga_min.values)
         print "chi^2 = %.4f, dof = %d, Q = %.4f" %(ga_min.fval,dof,gafit.Q(ga_min.fval,dof))
-        for p in ga_min.parameters:
-            print '  %s = %.4f +- %.4f' %(p,ga_min.values[p],ga_min.errors[p])
+        for i in ga_min.parameters:
+            print '  %s = %.4f +- %.4f' %(i,ga_min.values[i],ga_min.errors[i])
 
         # central value
         x0 = CS.x0
@@ -289,11 +293,24 @@ def chipt_fit(args,p,data):
         # print outputs
         rdict[select] = print_output(CS,ga_min,select)
         if args.bs:
-            print('doing bs loop')
+            print('make sqlite db and table')
+            cur,conn = sql.login(p)
+            cur,conn = sql.id_name_nbs_result_table(cur,conn,p)
+            ga_min_bs = gafit.minimize(CS.select_chisq(select),ini_vals(select))
+            # write boot0
+            b0result = ga_min_bs.values
+            b0result['cov'] = np.array(ga_min.matrix(correlation=False,skip_fixed=True)).tolist()
+            b0result['AICc'] = gafit.aicc(ga_min.fval,CS.p['l_d'],len(ga_min.values))
+            b0result['chi2'] = ga_min_bs.fval
+            b0result['dof'] = CS.p['l_d'] - len(ga_min.values)
+            b0result['Q'] = gafit.Q(ga_min.fval,b0result['dof'])
+            b0result = str(b0result).replace("'",'\"')
+            cur,conn = sql.id_name_nbs_result_insert(cur,conn,p,select,0,b0result)
             for bs in tqdm.tqdm(range(p['Nbs']),desc='Nbs'):
                 CS(True,bs)
                 ga_min_bs = gafit.minimize(CS.select_chisq(select),ini_vals(select))
-                #print ga_min_bs.values['c0']
+                cur,conn = sql.id_name_nbs_result_insert(cur,conn,p,select,bs+1,str(ga_min_bs.values).replace("'",'\"'))
+                raise SystemExit
     return rdict
 
 def plot_fit(args,params_chipt,params_plot,data,rdict):
