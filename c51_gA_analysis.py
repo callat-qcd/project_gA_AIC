@@ -200,7 +200,11 @@ class ChiSq():
         self.ga_b0 = data['ga_b0']
         self.epi_bs = data['epi_bs']
         self.epi_b0 = data['epi_b0']
+        self.do_bs = False
         return None
+    def __call__(self,do_bs,bs):
+        self.do_bs = do_bs
+        self.bs = bs
     def select_chisq(self,select):
         if select in ['taylor_esq_1']:
             return self.taylor_esq_1
@@ -212,13 +216,17 @@ class ChiSq():
         self.xphys = self.p['epi_phys']**2
         self.xdict = {'epi0':self.x0, 'epi':self.xphys}
         chisq = 0.
-        y = self.ga_b0
-        x = self.epi_b0**2
-        ybs = self.ga_bs.mean(axis=0)
-        xbs = (self.epi_bs**2).mean(axis=0)
+        if self.do_bs:
+            y     = self.ga_bs[self.bs]
+            x     = (self.epi_bs**2)[self.bs]
+        else:
+            y     = self.ga_b0
+            x     = self.epi_b0**2
+        ybs   = self.ga_bs.mean(axis=0)
+        xbs   = (self.epi_bs**2).mean(axis=0)
         cdict = {'c0':c0, 'ca2':ca2, 'cm1':cm1}
-        f   = gafit.ga_epi(self.x0,x,self.p['xa'],**cdict)
-        fbs = gafit.ga_epi(self.x0,xbs,self.p['xa'],**cdict)
+        f     = gafit.ga_epi(self.x0,x,self.p['xa'],**cdict)
+        fbs   = gafit.ga_epi(self.x0,xbs,self.p['xa'],**cdict)
         for i,ens in enumerate(self.p['ensembles']):
             f[i]   += gafit.dgaFV(self.epi_b0[i],self.p['mL'][i],g0fv)
             fbs[i] += gafit.dgaFV(self.epi_b0[i],self.p['mL'][i],g0fv)
@@ -226,16 +234,17 @@ class ChiSq():
         if self.args.error_epi:
             cov = np.zeros([self.p['Nbs'],self.p['l_d']])
             for i,ens in enumerate(self.p['ensembles']):
-                dy = self.ga_bs[:,i] - ybs[i]
-                df = gafit.ga_epi(self.x0,(self.epi_bs**2)[:,i],self.p['xa'][i],c0,ca2=ca2,cm1=cm1) - fbs[i]
+                dy  = self.ga_bs[:,i] - ybs[i]
+                df  = gafit.ga_epi(self.x0,(self.epi_bs**2)[:,i],self.p['xa'][i],**cdict) -fbs[i]
                 df += gafit.dgaFV(self.epi_bs[:,i],self.p['mL'][i],g0fv)
                 cov[:,i]  = ( dy - df )**2
             cov = (1./self.p['Nbs']) * np.sum(cov,axis=0)
         else:
             cov = self.ga_bs.var(axis=0)
         '''
+        we have no PQ data on same ensembles so
         y,f,cov are all len(l_d) arrays
-        so numpy will properly do the multiplication/division
+        numpy will properly do the multiplication/division
         '''
         chisq += np.sum( (y-f)**2 / cov )
         if self.args.g0fv != None:
@@ -278,6 +287,13 @@ def chipt_fit(args,p,data):
         ga_min = gafit.minimize(CS.select_chisq(select),ini_vals(select))
         # print outputs
         rdict[select] = print_output(CS,ga_min,select)
+        if args.bs:
+            print('doing bs loop')
+            for bs in range(p['Nbs']):
+                print bs
+                CS(True,bs)
+                ga_min_bs = gafit.minimize(CS.select_chisq(select),ini_vals(select))
+                print ga_min_bs.values['c0']
     return rdict
 
 def plot_fit(args,params_chipt,params_plot,data,rdict):
