@@ -20,6 +20,7 @@ try:
     import tables as h5
     import iminuit as mn
     import ga_fit_funcs as gafit
+    import tqdm
 except ImportError as e:
     print type(e)
     print e
@@ -289,11 +290,10 @@ def chipt_fit(args,p,data):
         rdict[select] = print_output(CS,ga_min,select)
         if args.bs:
             print('doing bs loop')
-            for bs in range(p['Nbs']):
-                print bs
+            for bs in tqdm.tqdm(range(p['Nbs']),desc='Nbs'):
                 CS(True,bs)
                 ga_min_bs = gafit.minimize(CS.select_chisq(select),ini_vals(select))
-                print ga_min_bs.values['c0']
+                #print ga_min_bs.values['c0']
     return rdict
 
 def plot_fit(args,params_chipt,params_plot,data,rdict):
