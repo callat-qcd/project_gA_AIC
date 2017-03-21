@@ -12,6 +12,8 @@ def Q(chisq,dof):
     return spsp.gammaincc(0.5*dof,0.5*chisq)
 def aicc(chisq,l_d,l_par):
     return 2*l_par + chisq + 2.*(l_par)*(l_par+1)/(l_d -l_par -1)
+def aic(chisq,l_par):
+    return 2*l_par + chisq
 def minimize(chisq,ini_vals):
     ga_min = mn.Minuit(chisq, pedantic=False, print_level=0, **ini_vals)
     ga_min.migrad()
@@ -304,6 +306,8 @@ def fit_gA(args,p,data,ini_vals):
             print('g0fv = %.3f +- %.3f' %(ga_min.values['g0fv'],ga_min.errors['g0fv']))
             if args.g0fv != None:
                 print('g0fv prior = %f +- %f' %(args.g0fv[0],args.g0fv[1]))
+        print('AIC = 2k - 2 ln(exp(-chisq/2))')
+        print('AIC = %.4f\n' %aic(ga_min.fval,len(ga_min.values)))
         print('AICc = 2k - 2 ln(exp(-chisq/2)) + 2k(k+1) / (Nd - k - 1)')
         print('    k = n_lam, %d; Nd = number of data, %d;' %(len(ga_min.values),CS.p['l_d']))
         print('AICc = %.3f\n' %aicc(ga_min.fval,CS.p['l_d'],len(ga_min.values)))

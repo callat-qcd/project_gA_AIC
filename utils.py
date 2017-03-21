@@ -49,7 +49,6 @@ def read_data(fname,args,p):
     c51_data.close()
     return data
 
-
 def plot_fit(args,params_chipt,params_plot,data,rdict):
     ############################
     # FUNCTIONS FOR plot_fit() #
