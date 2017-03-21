@@ -24,6 +24,7 @@ try:
     # modules created for this work
     import ga_fit_funcs as gafit
     import utils
+    import data_params as dp
 except ImportError as e:
     print type(e)
     print e
@@ -109,7 +110,7 @@ if __name__=='__main__':
     # parse keyboard inputs
     args = parse_input()
     # set chipt parameters
-    params_gA = utils.gA_parameters()
+    params_gA = dp.gA_parameters()
     # set plotting parameters
     params_plot = utils.plotting_parameters()
     # read data
