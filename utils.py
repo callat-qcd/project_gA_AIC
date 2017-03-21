@@ -139,65 +139,85 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
     # FUNCTIONS FOR plot_fit() #
     ############################
     def continuum_plot(args,params_plot,result,ax,legend,select):
-        e0 = result['xdict']['epi0']
         epi = result['xdict']['epi_plot']
         x = result['xdict']['xplot']
         a = result['xdict']['a']
+        if type(epi) != np.ndarray and type(a) == np.ndarray:
+            label = r'$g_A^{LQCD}(\epsilon_\pi^{phys},a/w_0)$'
+        elif type(a) != np.ndarray and type(epi) == np.ndarray:
+            label = r'$g_A^{LQCD}(\epsilon_\pi,a=0)$'
         # taylor fit needs g0fv, which infinite volume function doesn't know about
         # so chop of the last element (g0fv) of corrleation matrix
-        cov = np.array(result['ga_min'].matrix(correlation=False,skip_fixed=True))[0:-1,0:-1]
-        ga_plot = gafit.ga_epi(epi0=e0,epi=epi,a=a,**result['ga_min'].values)
+        cov = np.array(result['ga_min'].matrix(correlation=False,skip_fixed=True))
         if select in ['taylor_esq_1']:
-            dga_plot = gafit.dga_epi(epi0=e0,epi=epi,a=a,lam_cov=cov,**result['ga_min'].values)
-            if type(epi) != np.ndarray and type(a) == np.ndarray:
-                leg, = ax.fill(x,-100*np.ones_like(x),\
-                    color=params_plot['cont_color'],alpha=params_plot['a_cont'],\
-                    label=r'$g_A^{LQCD}(\epsilon_\pi^{phys},a/w_0)$')
-            elif type(a) != np.ndarray and type(epi) == np.ndarray:
-                leg, = ax.fill(x,-100*np.ones_like(x),\
-                    color=params_plot['cont_color'],alpha=params_plot['a_cont'],\
-                    label=r'$g_A^{LQCD}(\epsilon_\pi,a=0)$')
+            e0 = result['xdict']['epi0']
+            ga_plot = gafit.ga_epi(epi0=e0,epi=epi,a=a,**result['ga_min'].values)
+            cov2 = cov[0:-1,0:-1]
+            dga_plot = gafit.dga_epi(epi0=e0,epi=epi,a=a,lam_cov=cov2,**result['ga_min'].values)
+        elif select in ['chiral_nlo']:
+            ga_plot = gafit.ga_su2(epi=epi,a=a,**result['ga_min'].values)
+            dga_plot = gafit.dga_su2(epi=epi,a=a,lam_cov=cov,**result['ga_min'].values)
+        leg, = ax.fill(x,-100*np.ones_like(x),\
+            color=params_plot['cont_color'],alpha=params_plot['a_cont'],label=label)
         ax.fill_between(x,ga_plot-dga_plot,ga_plot+dga_plot,\
             color=params_plot['cont_color'],alpha=params_plot['a_cont'])
         legend.append(leg)
         return legend
     def discrete_plot(args,params_plot,data,result,ax,legend,select):
-        e0 = result['xdict']['epi0']
         epi = result['xdict']['epi_plot']
         x = result['xdict']['xplot']
         a = result['xdict']['a']
-        cov = np.array(result['ga_min'].matrix(correlation=False,skip_fixed=True))[0:-1,0:-1]
+        if type(epi) != np.ndarray and type(a) == np.ndarray:
+            e = np.array([data['epi_b0'][params_chipt['ens_idx']['a15m310']],\
+                data['epi_b0'][params_chipt['ens_idx']['a15m220']],\
+                data['epi_b0'][params_chipt['ens_idx']['a15m130']]])
+            ga_plot_lbl = [r'$g_A(\epsilon_\pi^{(310)},a/w_0)$',
+                r'$g_A(\epsilon_\pi^{(220)},a/w_0)$',r'$g_A(\epsilon_\pi^{(130)},a/w_0)$']
+            color = ['k','k','k']
+            ls = ['-.','--','-']
+        elif type(a) != np.ndarray and type(epi) == np.ndarray:
+            ga_plot_lbl = [r'$g_A(\epsilon_\pi,a=0.15)$',
+                r'$g_A(\epsilon_\pi,a=0.12)$',r'$g_A(\epsilon_\pi,a=0.09)$']
+            color = [params_plot['e_clr']['a15m310'],
+                params_plot['e_clr']['a12m310'],params_plot['e_clr']['a09m310']]
+            ls = ['-','-','-']
         if select in ['taylor_esq_1','taylor_e_1','taylor_esq_2','taylor_e_2']:
+            e0 = result['xdict']['epi0']
             if type(epi) != np.ndarray and type(a) == np.ndarray:
-                e = np.array([data['epi_b0'][params_chipt['ens_idx']['a15m310']],\
-                    data['epi_b0'][params_chipt['ens_idx']['a15m220']],\
-                    data['epi_b0'][params_chipt['ens_idx']['a15m130']]])
                 if 'esq' in select:
-                    e = e**2
-                ga_1 = gafit.ga_epi(epi0=e0,epi=e[0],a=a,**result['ga_min'].values)
-                ga_2 = gafit.ga_epi(epi0=e0,epi=e[1],a=a,**result['ga_min'].values)
-                ga_3 = gafit.ga_epi(epi0=e0,epi=e[2],a=a,**result['ga_min'].values)
-                ga_plot_lbl = [r'$g_A(\epsilon_\pi^{(310)},a/w_0)$',r'$g_A(\epsilon_\pi^{(220)},a/w_0)$',r'$g_A(\epsilon_\pi^{(130)},a/w_0)$']
-                color = ['k','k','k']
-                ls = ['-.','--','-']
+                    ep = e**2
+                else: ep = e
+                ga_0 = gafit.ga_epi(epi0=e0,epi=ep[0],a=a,**result['ga_min'].values)
+                ga_1 = gafit.ga_epi(epi0=e0,epi=ep[1],a=a,**result['ga_min'].values)
+                ga_2 = gafit.ga_epi(epi0=e0,epi=ep[2],a=a,**result['ga_min'].values)
             elif type(a) != np.ndarray and type(epi) == np.ndarray:
-                ga_1 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a15m310'],**result['ga_min'].values)
-                ga_2 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a12m310'],**result['ga_min'].values)
-                ga_3 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a09m310'],**result['ga_min'].values)
-                ga_plot_lbl = [r'$g_A(\epsilon_\pi,a=0.15)$',r'$g_A(\epsilon_\pi,a=0.12)$',r'$g_A(\epsilon_\pi,a=0.09)$']
-                color = [params_plot['e_clr']['a15m310'],params_plot['e_clr']['a12m310'],params_plot['e_clr']['a09m310']]
-                ls = ['-','-','-']
-        ga_plot_a = [ga_1,ga_2,ga_3]
-        leg, = ax.plot(x,ga_1,color=color[0],alpha=0.5,label=ga_plot_lbl[0],ls=ls[0])
+                ga_0 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a15m310'],**result['ga_min'].values)
+                ga_1 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a12m310'],**result['ga_min'].values)
+                ga_2 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a09m310'],**result['ga_min'].values)
+        elif select in ['chiral_nlo']:
+            if type(epi) != np.ndarray and type(a) == np.ndarray:
+                ga_0 = gafit.ga_su2(epi=e[0],a=a,**result['ga_min'].values)
+                ga_1 = gafit.ga_su2(epi=e[1],a=a,**result['ga_min'].values)
+                ga_2 = gafit.ga_su2(epi=e[2],a=a,**result['ga_min'].values)
+            elif type(a) != np.ndarray and type(epi) == np.ndarray:
+                ga_0 = gafit.ga_su2(epi,params_chipt['aw0']['a15m310'],**result['ga_min'].values)
+                ga_1 = gafit.ga_su2(epi,params_chipt['aw0']['a12m310'],**result['ga_min'].values)
+                ga_2 = gafit.ga_su2(epi,params_chipt['aw0']['a09m310'],**result['ga_min'].values)
+        ga_plot_a = [ga_0,ga_1,ga_2]
+        leg, = ax.plot(x,ga_0,color=color[0],alpha=0.5,label=ga_plot_lbl[0],ls=ls[0])
         legend.insert(0,leg)
-        leg, = ax.plot(x,ga_2,color=color[1],alpha=0.5,label=ga_plot_lbl[1],ls=ls[1])
+        leg, = ax.plot(x,ga_1,color=color[1],alpha=0.5,label=ga_plot_lbl[1],ls=ls[1])
         legend.insert(0,leg)
-        leg, = ax.plot(x,ga_3,color=color[2],alpha=0.5,label=ga_plot_lbl[2],ls=ls[2])
+        leg, = ax.plot(x,ga_2,color=color[2],alpha=0.5,label=ga_plot_lbl[2],ls=ls[2])
         legend.insert(0,leg)
         return legend
     def data_plot(args,params_chipt,params_plot,data,result,ax,legend):
         epi = result['xdict']['epi_plot']
         a = result['xdict']['a']
+        if 'g0fv' in result['ga_min'].values:
+            g0fv = result['ga_min'].values['g0fv']
+        else:
+            g0fv = result['ga_min'].values['g0']
         for i,ens in enumerate(params_chipt['ensembles']):
             iens = params_chipt['ens_idx'][ens]
             ei = data['epi_b0'][iens]
@@ -205,7 +225,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
             alpha = 1
             mkr = params_plot['e_mrkr'][ens]
             fv_class = gafit.FV_function(ei,params_chipt['mpiL'][ens])
-            dfv = fv_class.dgaFV(result['ga_min'].values['g0fv'])
+            dfv = fv_class.dgaFV(g0fv)
             gi = data['ga_b0'][iens]
             dgi = data['ga_bs'][:,iens].std()
             if type(epi) != np.ndarray and type(a) == np.ndarray:
@@ -284,11 +304,18 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         dga_L = np.zeros_like(mLplot)
         cov = np.array(result['ga_min'].matrix(correlation=False,skip_fixed=True))
         fv_class = gafit.FV_function(epifv,mLplot)
-        ga_L  = fv_class.dgaFV(result['ga_min'].values['g0fv'])
+        if 'g0fv' in result['ga_min'].values:
+            ga_L  = fv_class.dgaFV(result['ga_min'].values['g0fv'])
+            ga_L += gafit.ga_epi(epi0=e0,epi=epi,a=a,**result['ga_min'].values)
+        else:
+            ga_L  = fv_class.dgaFV(result['ga_min'].values['g0'])        
+            ga_L += gafit.ga_su2(epi=epi,a=a,**result['ga_min'].values)
         dga_L = np.zeros_like(ga_L)
         for i,mLi in enumerate(mLplot):
-            dga_L[i] = gafit.dga_epi_fv(e0,epi,epifv,a,mLi,cov,**result['ga_min'].values)
-        ga_L += gafit.ga_epi(epi0=e0,epi=epi,a=a,**result['ga_min'].values)
+            if select in ['taylor_esq_1']:
+                dga_L[i] = gafit.dga_epi_fv(e0,epi,epifv,a,mLi,cov,**result['ga_min'].values)
+            elif select in ['chiral_nlo']:
+                dga_L[i] = gafit.dfv_su2_nlo(epi,mLi,a,lam_cov=cov,**result['ga_min'].values)
         gn = params_plot['e_clr']['a12m220']
         mkr = params_plot['e_mrkr']['a12m220']
         ax.fill_between(xplot,ga_L-dga_L, ga_L+dga_L,color=gn,alpha=0.2)
@@ -353,14 +380,69 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         # gA vs L plot
         ############################################
-        print('gA vs L: Taylor e_pi^2')
+        print('gA vs L:   Taylor e_pi^2')
         # initialize figure
         plt.figure('gA vs L Taylor epsq',figsize=params_plot['fig_gldn'])
         ga_L_ax = plt.axes(params_plot['mL_axes'])
         result['xdict']['epi0'] = args.e0**2
         result['xdict']['mL'] = np.arange(3,100.1,.1)
         fv_plot(args,params_chipt,params_plot,result,data,ga_L_ax,select)
-        
+    if args.fits in ['all','chiral_nlo'] and args.plot:
+        # select results
+        select = 'chiral_nlo'
+        result = rdict[select].copy()
+        ############################################
+        # gA vs e_pi plot
+        ############################################
+        print('gA vs epi: SU(2) NLO')
+        # initialize figure
+        plt.figure('gA vs epi SU(2) NLO',figsize=params_plot['fig_gldn'])
+        ga_mpi_ax = plt.axes(params_plot['ga_axes'])
+        leg1 = []
+        leg2 = []
+        # define x dependence
+        result['xdict']['epi_plot'] = np.arange(0.001,0.41,.001)
+        result['xdict']['xplot'] = np.arange(0.001,0.41,.001)
+        result['xdict']['a'] = 0
+        # continuum limit plot
+        leg2 = continuum_plot(args,params_plot,result,ga_mpi_ax,leg2,select)
+        # finite a plots
+        leg1 = discrete_plot(args,params_plot,data,result,ga_mpi_ax,leg1,select)
+        # add data points
+        leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_mpi_ax,leg1)
+        # finish plot
+        finish_plot(args,params_chipt,params_plot,result,ga_mpi_ax,leg1,leg2)
+        ############################################
+        # gA vs asq plot
+        ############################################
+        print('gA vs asq: SU(2) NLO')
+        # initialize figure
+        plt.figure('gA vs asq SU(2) NLO',figsize=params_plot['fig_gldn'])
+        ga_a_ax = plt.axes(params_plot['ga_axes'])
+        leg1 = []
+        leg2 = []
+        result['xdict']['epi_plot'] = params_chipt['epi_phys']
+        result['xdict']['xplot'] = np.arange(0,1.01,.01)**2
+        result['xdict']['a'] = np.arange(0,1.01,.01)
+        # continuum limit plot
+        leg2 = continuum_plot(args,params_plot,result,ga_a_ax,leg2,select)
+        # finite a plots
+        leg1 = discrete_plot(args,params_plot,data,result,ga_a_ax,leg1,select)
+        # add data points
+        leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_a_ax,leg1)
+        # finish plot
+        finish_plot(args,params_chipt,params_plot,result,ga_a_ax,leg1,leg2)
+        ############################################
+        # gA vs L plot
+        ############################################
+        print('gA vs L:   SU(2) NLO')
+        # initialize figure
+        plt.figure('gA vs L SU(2) NLO',figsize=params_plot['fig_gldn'])
+        ga_L_ax = plt.axes(params_plot['mL_axes'])
+        result['xdict']['epi0'] = args.e0**2
+        result['xdict']['mL'] = np.arange(3,100.1,.1)
+        fv_plot(args,params_chipt,params_plot,result,data,ga_L_ax,select)
+       
     # display plot
     if args.plot:
         plt.ioff()
