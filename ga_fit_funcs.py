@@ -22,7 +22,7 @@ def minimize(chisq,ini_vals):
 ########################################
 #  gA SU(2) ChiPT vs e_pi = mpi / 4piFpi
 ########################################
-def ga_su2(epi,a,g0,c2,c3=0,ca2=0,ca4=0,afs=0,cafs=0):
+def ga_su2(epi,a,g0,c2,c3=0,ca2=0,ca4=0,afs=0,cafs=0,**kwargs):
     # LO relations
     ga = g0
     # asq
@@ -332,10 +332,11 @@ def fit_gA(args,p,data,ini_vals):
             # write boot0
             b0result = ga_min_bs.values
             b0result['cov'] = np.array(ga_min.matrix(correlation=False,skip_fixed=True)).tolist()
-            b0result['AICc'] = aicc(ga_min.fval,CS.p['l_d'],len(ga_min.values))
+            b0result['AIC'] = aic(ga_min.fval,CS.p['l_d'])
             b0result['chi2'] = ga_min_bs.fval
             b0result['dof'] = CS.p['l_d'] - len(ga_min.values)
             b0result['Q'] = Q(ga_min.fval,b0result['dof'])
+            b0result['e0'] = args.e0
             b0result = str(b0result).replace("'",'\"')
             cur,conn = sql.id_name_nbs_result_insert(cur,conn,p,select,0,b0result)
             for bs in tqdm.tqdm(range(p['Nbs']),desc='Nbs'):
@@ -357,7 +358,7 @@ def fit_gA(args,p,data,ini_vals):
             # write boot0
             b0result = ga_min_bs.values
             b0result['cov'] = np.array(ga_min.matrix(correlation=False,skip_fixed=True)).tolist()
-            b0result['AICc'] = aicc(ga_min.fval,CS.p['l_d'],len(ga_min.values))
+            b0result['AIC'] = aic(ga_min.fval,CS.p['l_d'])
             b0result['chi2'] = ga_min_bs.fval
             b0result['dof'] = CS.p['l_d'] - len(ga_min.values)
             b0result['Q'] = Q(ga_min.fval,b0result['dof'])
