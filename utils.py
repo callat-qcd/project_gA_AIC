@@ -50,39 +50,6 @@ def read_data(fname,args,p):
     return data
 
 
-def plotting_parameters():
-    p = dict()
-    # Figure sizes and fonts
-    p['fig_gldn'] = (8.125,5.018)
-    p['ga_axes'] = [0.095,0.128,0.895,0.865]
-    p['mL_axes'] = [0.095,0.125,0.895,0.865]
-    p['fs'] = 24
-
-    # set up ensemble parameters for plotting
-    # colors
-    rd = '#c82506'
-    gn = '#70b741'
-    bl = '#51a7f9'
-    p['cont_color'] = '#b36ae2'
-    p['a_cont'] = 0.4
-    p['e_clr'] = {'a15m310':rd,'a15m220':rd,'a15m130':rd,
-                  'a12m310':gn,'a12m220S':gn,'a12m220':gn,'a12m220L':gn,
-                  'a09m310':bl}
-    p['m_lbl'] = {'a15m310':r'$m_\pi\sim310$~MeV','a12m310':r'$m_\pi\sim310$~MeV','a09m310':r'$m_\pi\sim310$~MeV',
-                  'a15m220':r'$m_\pi\sim220$~MeV','a12m220':r'$m_\pi\sim220$~MeV',
-                  'a15m130':r'$m_\pi\sim130$~MeV',
-                  'a12m220S':r'$m_\pi\sim220$~MeV','a12m220L':r'$m_\pi\sim220$~MeV'}
-    p['m_i'] = ['a15m310','a15m220','a15m130']
-    p['a_lbl'] = {'a15m310':r'$a\sim0.15$~fm','a12m310':r'$a\sim0.12$~fm','a09m310':r'$a\sim0.09$~fm',
-                  'a15m220':r'$a\sim0.15$~fm','a12m220':r'$a\sim0.12$~fm',
-                  'a15m130':r'$a\sim0.15$~fm',
-                  'a12m220S':r'$a\sim0.12$~fm','a12m220L':r'$a\sim0.12$~fm'}
-    p['a_i'] = ['a15m310','a12m310','a09m310']
-    p['e_mrkr'] = {'a15m310':'s','a12m310':'s','a09m310':'s',
-                   'a15m220':'h','a12m220':'h','a12m220S':'h','a12m220L':'h',
-                   'a15m130':'d'}
-    return p
-
 def plot_fit(args,params_chipt,params_plot,data,rdict):
     ############################
     # FUNCTIONS FOR plot_fit() #

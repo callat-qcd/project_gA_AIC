@@ -112,7 +112,7 @@ if __name__=='__main__':
     # set chipt parameters
     params_gA = dp.gA_parameters()
     # set plotting parameters
-    params_plot = utils.plotting_parameters()
+    params_plot = dp.plotting_parameters()
     # read data
     data = utils.read_data(args.file,args,params_gA)
     # fit data
