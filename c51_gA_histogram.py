@@ -37,31 +37,56 @@ def CI68(bins, CI):
             pass
     return bin68
 
-def make_histogram(bssort, title, tag, param=None, boot0=None):
-    CI = [bssort[int(len(bssort)*0.158655254)], bssort[int(len(bssort)*0.841344746)], bssort[int(len(bssort)*0.5)]]
+def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None):
+    # get confidence interval index
+    if type(weights) == np.ndarray:
+        norm = sum(weights)
+        CIidx = {0.025:0, 0.159:0, 0.250:0, 0.500:0, 0.750:0, 0.841:0, 0.975:0}
+        s = 0
+        i = 0
+        while s <= 0.975*norm:
+            s += weights[i]
+            CIidx[0.975] = i
+            if s <= 0.841344746*norm:
+                CIidx[0.841] = i
+                if s <= 0.75*norm:
+                    CIidx[0.750] = i
+                    if s <= 0.5*norm:
+                        CIidx[0.500] = i
+                        if s <= 0.25*norm:
+                            CIidx[0.250] = i
+                            if s <= 0.158655254*norm:
+                                CIidx[0.159] = i
+                                if s <= 0.025*norm:
+                                    CIidx[0.025] = i
+            i += 1
+    else:
+        norm = len(bssort)
+        CIidx = {0.025:int(norm*0.025), 0.159:int(norm*0.158655254), 0.500:int(norm*0.5), 0.841:int(norm*0.841344746), 0.975:int(norm*0.975)}
+    CI = [bssort[CIidx[0.159]], bssort[CIidx[0.841]], bssort[CIidx[0.500]]]
     print "median: %s" %CI[2]
     print "dCI: %s" %(0.5*(CI[1]-CI[0]))
     print "std: %s" %np.std(bssort)
 
-    CI2s = [bssort[int(len(bssort)*0.025)], bssort[int(len(bssort)*0.975)], bssort[int(len(bssort)*0.5)]]
+    CI2s = [bssort[CIidx[0.025]], bssort[CIidx[0.975]], bssort[CIidx[0.500]]]
 
     # set histogram color
     color = '#b36ae2'
     # set binsize
-    IQR = bssort[int(len(bssort)*0.75)] - bssort[int(len(bssort)*0.25)]
+    IQR = bssort[CIidx[0.750]] - bssort[CIidx[0.250]]
     binsize = 2.*IQR/(len(bssort)**(1./3.)) # Freedman-Diaconis rule
     setbins = int((bssort[-1]-bssort[0])/binsize)
     # start plot
     fig = plt.figure(figsize=(7,4.326237))
     ax = plt.axes([0.15,0.15,0.8,0.8])
-    n, bins, patches = ax.hist(bssort, setbins, facecolor=color,ec='black',alpha=0.2,histtype='stepfilled')
+    n, bins, patches = ax.hist(bssort, setbins, facecolor=color,ec='black',alpha=0.2,histtype='stepfilled',weights=weights)
     bin95 = CI68(bins, CI2s)
-    n, bins, patches = ax.hist(bssort, bin95, facecolor=color,ec='black',alpha=0.5,histtype='stepfilled')
+    n, bins, patches = ax.hist(bssort, bin95, facecolor=color,ec='black',alpha=0.5,histtype='stepfilled',weights=weights)
     bin68 = CI68(bins, CI)
-    n, bins, patches = ax.hist(bssort, bin68, facecolor=color,ec='black',histtype='stepfilled')
-    n, bins, patches = ax.hist(bssort, setbins, histtype='step',ec='black')
-    n, bins, patches = ax.hist(bssort, bin95, histtype='step',ec='black')
-    n, bins, patches = ax.hist(bssort, bin68, histtype='step',ec='black')
+    n, bins, patches = ax.hist(bssort, bin68, facecolor=color,ec='black',histtype='stepfilled',weights=weights)
+    n, bins, patches = ax.hist(bssort, setbins, histtype='step',ec='black',weights=weights)
+    n, bins, patches = ax.hist(bssort, bin95, histtype='step',ec='black',weights=weights)
+    n, bins, patches = ax.hist(bssort, bin68, histtype='step',ec='black',weights=weights)
     x = np.delete(bins, -1)
     if param==None:
         ax.set_xlabel('$g_{A}$', fontsize=20)
@@ -124,3 +149,8 @@ if __name__=='__main__':
     bootn['chiral_nlo'] = gA_xnlo_n
     mean, sdev = model_avg(boot0,bootn,w)
     print mean, sdev
+    # average histogram
+    whist = np.concatenate((w['taylor_esq_1']*np.ones_like(gA_tesq1_n),w['chiral_nlo']*np.ones_like(gA_xnlo_n)),axis=0)
+    cbootn = np.concatenate((gA_tesq1_n, gA_xnlo_n),axis=0)
+    idx = np.argsort(cbootn)
+    make_histogram(cbootn[idx],title='Akaike average',tag='AIC',weights=whist[idx])
