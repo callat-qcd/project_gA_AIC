@@ -46,13 +46,13 @@ def parse_input():
     parser.add_argument('-f','--fits',default='all',action='store',\
         help='''what type of extrapolation to perform? [%(default)s]
         all
-        taylor_e_1
-        taylor_e_2
-        taylor_esq_1
-        taylor_esq_2
-        chiral_nlo
-        chiral_nnlo
-        chiral_ma_nlo''')
+        t_e_1_a2
+        t_e_2_a2
+        t_esq_1_a2
+        t_esq_2_a2
+        x_nlo_a2
+        x_nnlo_a2
+        xma_nlo_a2''')
     parser.add_argument('--file',type=str,default='c51_gA_mdwf.h5',action='store',
         help='hdf5 input file name [%(default)s]')
     parser.add_argument('--e0',type=float,default=0.,action='store',\
@@ -95,10 +95,10 @@ def parse_input():
 
 def ini_vals(select):
     # initial values for minimizer
-    if select in ['taylor_esq_1']:
+    if select in ['t_esq_1_a2']:
         return {'c0':1.25,'error_c0':0.05,'cm1':-1,'error_cm1':0.05,\
                 'ca2':-0.1,'error_ca2':0.02,'g0fv':1.5,'error_g0fv':0.1}
-    elif select in ['chiral_nlo']:
+    elif select in ['x_nlo_a2']:
         return {'g0':1.25,'error_g0':0.05,'c2':-1,'error_c2':0.05,\
                 'ca2':-0.1,'error_ca2':0.02}
     else:

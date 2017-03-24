@@ -210,14 +210,14 @@ class ChiSq():
         self.do_bs = do_bs
         self.bs = bs
     def select_chisq(self,select):
-        if select in ['taylor_esq_1']:
-            return self.taylor_esq_1
-        elif select in ['chiral_nlo']:
-            return self.chiral_nlo
+        if select in ['t_esq_1_a2']:
+            return self.t_esq_1_a2
+        elif select in ['x_nlo_a2']:
+            return self.x_nlo_a2
         else:
             print('chisq is unselected')
             raise SystemExit
-    def taylor_esq_1(self,c0,cm1,ca2,g0fv):
+    def t_esq_1_a2(self,c0,cm1,ca2,g0fv):
         ''' taylor esq function defined as function of epi**2 '''
         self.x0 = self.args.e0**2
         self.xphys = self.p['epi_phys']**2
@@ -253,7 +253,7 @@ class ChiSq():
         if self.args.g0fv != None:
             chisq += (g0fv - self.args.g0fv[0])**2 / self.args.g0fv[1]**2
         return chisq
-    def chiral_nlo(self,g0,c2,ca2):
+    def x_nlo_a2(self,g0,c2,ca2):
         ''' chipt function defined as function of epi '''
         self.xphys = self.p['epi_phys']
         self.xdict = {'epi':self.xphys}
@@ -289,14 +289,14 @@ def fit_gA(args,p,data,ini_vals):
         # uncertainty - gA-infinite doesn't know about FV
         # so chop covariance matrix - g0fv is last parameter for Taylor fits
         cov = np.array(ga_min.matrix(correlation=False,skip_fixed=True))
-        if select in ['taylor_esq_1']:
+        if select in ['t_esq_1_a2']:
             cov2 = cov[:-1,:-1]
             x0 = CS.x0
             params = CS.xdict.copy()
             params.update(ga_min.values)
             ga_fit = ga_epi(a=0,**params)
             dga_fit = dga_epi(epi0=x0,epi=np.array([xphys]),a=0,lam_cov=cov2,**ga_min.values)
-        elif select in ['chiral_nlo']:
+        elif select in ['x_nlo_a2']:
             params = CS.xdict.copy()
             params.update(ga_min.values)
             ga_fit = ga_su2(a=0,**params)
@@ -308,66 +308,55 @@ def fit_gA(args,p,data,ini_vals):
                 print('g0fv prior = %f +- %f' %(args.g0fv[0],args.g0fv[1]))
         print('AIC = 2k - 2 ln(exp(-chisq/2))')
         print('AIC = %.4f\n' %aic(ga_min.fval,len(ga_min.values)))
-        print('AICc = 2k - 2 ln(exp(-chisq/2)) + 2k(k+1) / (Nd - k - 1)')
-        print('    k = n_lam, %d; Nd = number of data, %d;' %(len(ga_min.values),CS.p['l_d']))
-        print('AICc = %.3f\n' %aicc(ga_min.fval,CS.p['l_d'],len(ga_min.values)))
+        #print('AICc = 2k - 2 ln(exp(-chisq/2)) + 2k(k+1) / (Nd - k - 1)')
+        #print('    k = n_lam, %d; Nd = number of data, %d;' %(len(ga_min.values),CS.p['l_d']))
+        #print('AICc = %.3f\n' %aicc(ga_min.fval,CS.p['l_d'],len(ga_min.values)))
         return {'ga_fit':ga_fit, 'dga_fit':dga_fit, 'xdict':CS.xdict.copy(), 'ga_min':ga_min}
+    # record b0 and bs results to DB
+    def bs_to_db(p,ga_min,select):
+        print('make sqlite db and table')
+        cur,conn = sql.login(p)
+        cur,conn = sql.id_name_nbs_result_table(cur,conn,p)
+        # write boot0
+        b0result = dict(ga_min.values)
+        b0result['cov'] = np.array(ga_min.matrix(correlation=False,skip_fixed=True)).tolist()
+        b0result['AIC'] = aic(ga_min.fval,len(ga_min.values))
+        b0result['chi2'] = ga_min.fval
+        b0result['dof'] = CS.p['l_d'] - len(ga_min.values)
+        b0result['Q'] = Q(ga_min.fval,b0result['dof'])
+        b0result['e0'] = args.e0
+        b0result = str(b0result).replace("'",'\"')
+        cur,conn = sql.id_name_nbs_result_insert(cur,conn,p,select,0,b0result)
+        for bs in tqdm.tqdm(range(p['Nbs']),desc='Nbs'):
+            CS(True,bs)
+            ga_min_bs = minimize(CS.select_chisq(select),ini_vals(select))
+            cur,conn = sql.id_name_nbs_result_insert(\
+                cur,conn,p,select,bs+1,str(ga_min_bs.values).replace("'",'\"'))
+
     # initialized ChiSq class
     CS = ChiSq(args,p,data)
     # collect result
     rdict = dict()
     # choose fit function
-    if args.fits in ['all','taylor_esq_1']:
-        select = 'taylor_esq_1'
+    if args.fits in ['all','t_esq_1_a2']:
+        select = 't_esq_1_a2'
         print('gA = c0 + c1*(epi**2-e0**2) + ca2 * (a/w0)**2\n')
         # do the minimization
         ga_min = minimize(CS.select_chisq(select),ini_vals(select))
         # print outputs
         rdict[select] = print_output(CS,ga_min,select)
         if args.bs:
-            print('make sqlite db and table')
-            cur,conn = sql.login(p)
-            cur,conn = sql.id_name_nbs_result_table(cur,conn,p)
-            ga_min_bs = minimize(CS.select_chisq(select),ini_vals(select))
-            # write boot0
-            b0result = ga_min_bs.values
-            b0result['cov'] = np.array(ga_min.matrix(correlation=False,skip_fixed=True)).tolist()
-            b0result['AIC'] = aic(ga_min.fval,CS.p['l_d'])
-            b0result['chi2'] = ga_min_bs.fval
-            b0result['dof'] = CS.p['l_d'] - len(ga_min.values)
-            b0result['Q'] = Q(ga_min.fval,b0result['dof'])
-            b0result['e0'] = args.e0
-            b0result = str(b0result).replace("'",'\"')
-            cur,conn = sql.id_name_nbs_result_insert(cur,conn,p,select,0,b0result)
-            for bs in tqdm.tqdm(range(p['Nbs']),desc='Nbs'):
-                CS(True,bs)
-                ga_min_bs = minimize(CS.select_chisq(select),ini_vals(select))
-                cur,conn = sql.id_name_nbs_result_insert(cur,conn,p,select,bs+1,str(ga_min_bs.values).replace("'",'\"'))
-    if args.fits in ['all','chiral_nlo']:
-        select = 'chiral_nlo'
+            bs_to_db(p,ga_min,select)
+    if args.fits in ['all','x_nlo_a2']:
+        select = 'x_nlo_a2'
         print('gA = NLO SU(2) + FV + a**2, g0fv == g0\n')
         # do the minimization
         ga_min = minimize(CS.select_chisq(select),ini_vals(select))
+        print('original minimization')
+        print ga_min.values
         # print outputs
         rdict[select] = print_output(CS,ga_min,select)
         if args.bs:
-            print('make sqlite db and table')
-            cur,conn = sql.login(p)
-            cur,conn = sql.id_name_nbs_result_table(cur,conn,p)
-            ga_min_bs = minimize(CS.select_chisq(select),ini_vals(select))
-            # write boot0
-            b0result = ga_min_bs.values
-            b0result['cov'] = np.array(ga_min.matrix(correlation=False,skip_fixed=True)).tolist()
-            b0result['AIC'] = aic(ga_min.fval,CS.p['l_d'])
-            b0result['chi2'] = ga_min_bs.fval
-            b0result['dof'] = CS.p['l_d'] - len(ga_min.values)
-            b0result['Q'] = Q(ga_min.fval,b0result['dof'])
-            b0result = str(b0result).replace("'",'\"')
-            cur,conn = sql.id_name_nbs_result_insert(cur,conn,p,select,0,b0result)
-            for bs in tqdm.tqdm(range(p['Nbs']),desc='Nbs'):
-                CS(True,bs)
-                ga_min_bs = minimize(CS.select_chisq(select),ini_vals(select))
-                cur,conn = sql.id_name_nbs_result_insert(cur,conn,p,select,bs+1,str(ga_min_bs.values).replace("'",'\"'))
-                #raise SystemExit
+            bs_to_db(p,ga_min,select)
     return rdict
 

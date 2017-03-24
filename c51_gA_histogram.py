@@ -20,9 +20,9 @@ def read_sql(tblname,fitname):
 
 def make_ga(data,fitname):
     p = dps.gA_parameters()
-    if fitname in ['taylor_esq_1']:
+    if fitname in ['t_esq_1_a2']:
         gA = np.array([ff.ga_epi(epi0=data[0]['e0']**2,epi=p['epi_phys']**2,a=0,**data[i]) for i in range(len(data))])
-    elif fitname in ['chiral_nlo']:
+    elif fitname in ['x_nlo_a2']:
         gA = np.array([ff.ga_su2(epi=p['epi_phys'],a=0,**data[i]) for i in range(len(data))])
     boot0 = gA[0]
     bootn = np.sort(gA[1:])
@@ -101,7 +101,7 @@ def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None):
     frame.axes.get_yaxis().set_visible(False)
     plt.draw()
     plt.show()
-    fig.savefig('/Users/cchang5/Documents/Papers/c51_p2/papers/ga_long/gA_%s.pdf' %tag, format='pdf')
+    fig.savefig('gA_%s.pdf' %tag, format='pdf')
     return 0
 
 def akaike_weights(data0):
@@ -114,6 +114,8 @@ def akaike_weights(data0):
     w = dict()
     for k in data0.keys():
         w[k] = np.exp(-0.5*(data0[k]['AIC']-AICm))/num
+        print k, data0[k]['AIC']
+    print w
     return w
 
 def model_avg(boot0,bootn,weights):
@@ -126,31 +128,31 @@ def model_avg(boot0,bootn,weights):
     return cv, sdev
 
 if __name__=='__main__':
-    taylor_esq_1 = read_sql('xcont','taylor_esq_1')
-    gA_tesq1_0, gA_tesq1_n = make_ga(taylor_esq_1,'taylor_esq_1')
-    #make_histogram(gA_tesq1_n,title='Taylor series in $\epsilon_\pi^2$',tag='taylor_esq_1')
+    t_esq_1_a2 = read_sql('xcont','t_esq_1_a2')
+    gA_tesq1_0, gA_tesq1_n = make_ga(t_esq_1_a2,'t_esq_1_a2')
+    #make_histogram(gA_tesq1_n,title='Taylor series in $\epsilon_\pi^2$',tag='t_esq_1_a2')
 
-    chiral_nlo = read_sql('xcont','chiral_nlo')
-    gA_xnlo_0, gA_xnlo_n = make_ga(chiral_nlo,'chiral_nlo')
-    #make_histogram(gA_xnlo_n,title='SU(2) NLO',tag='chiral_nlo')
+    x_nlo_a2 = read_sql('xcont','x_nlo_a2')
+    gA_xnlo_0, gA_xnlo_n = make_ga(x_nlo_a2,'x_nlo_a2')
+    #make_histogram(gA_xnlo_n,title='SU(2) NLO',tag='x_nlo_a2')
 
     # model average
     # get Akaike weights
     data0 = dict()
-    data0['taylor_esq_1'] = taylor_esq_1[0]
-    data0['chiral_nlo'] = chiral_nlo[0]
+    data0['t_esq_1_a2'] = t_esq_1_a2[0]
+    data0['x_nlo_a2'] = x_nlo_a2[0]
     w = akaike_weights(data0)
     # average models
     boot0 = dict()
-    boot0['taylor_esq_1'] = gA_tesq1_0
-    boot0['chiral_nlo'] = gA_xnlo_0
+    boot0['t_esq_1_a2'] = gA_tesq1_0
+    boot0['x_nlo_a2'] = gA_xnlo_0
     bootn = dict()
-    bootn['taylor_esq_1'] = gA_tesq1_n
-    bootn['chiral_nlo'] = gA_xnlo_n
+    bootn['t_esq_1_a2'] = gA_tesq1_n
+    bootn['x_nlo_a2'] = gA_xnlo_n
     mean, sdev = model_avg(boot0,bootn,w)
     print mean, sdev
     # average histogram
-    whist = np.concatenate((w['taylor_esq_1']*np.ones_like(gA_tesq1_n),w['chiral_nlo']*np.ones_like(gA_xnlo_n)),axis=0)
+    whist = np.concatenate((w['t_esq_1_a2']*np.ones_like(gA_tesq1_n),w['x_nlo_a2']*np.ones_like(gA_xnlo_n)),axis=0)
     cbootn = np.concatenate((gA_tesq1_n, gA_xnlo_n),axis=0)
     idx = np.argsort(cbootn)
     make_histogram(cbootn[idx],title='Akaike average',tag='AIC',weights=whist[idx])

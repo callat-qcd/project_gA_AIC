@@ -64,12 +64,12 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         # taylor fit needs g0fv, which infinite volume function doesn't know about
         # so chop of the last element (g0fv) of corrleation matrix
         cov = np.array(result['ga_min'].matrix(correlation=False,skip_fixed=True))
-        if select in ['taylor_esq_1']:
+        if select in ['t_esq_1_a2']:
             e0 = result['xdict']['epi0']
             ga_plot = gafit.ga_epi(epi0=e0,epi=epi,a=a,**result['ga_min'].values)
             cov2 = cov[0:-1,0:-1]
             dga_plot = gafit.dga_epi(epi0=e0,epi=epi,a=a,lam_cov=cov2,**result['ga_min'].values)
-        elif select in ['chiral_nlo']:
+        elif select in ['x_nlo_a2']:
             ga_plot = gafit.ga_su2(epi=epi,a=a,**result['ga_min'].values)
             dga_plot = gafit.dga_su2(epi=epi,a=a,lam_cov=cov,**result['ga_min'].values)
         leg, = ax.fill(x,-100*np.ones_like(x),\
@@ -96,7 +96,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
             color = [params_plot['e_clr']['a15m310'],
                 params_plot['e_clr']['a12m310'],params_plot['e_clr']['a09m310']]
             ls = ['-','-','-']
-        if select in ['taylor_esq_1','taylor_e_1','taylor_esq_2','taylor_e_2']:
+        if select in ['t_esq_1_a2','t_e_1_a2','t_esq_2_a2','t_e_2_a2']:
             e0 = result['xdict']['epi0']
             if type(epi) != np.ndarray and type(a) == np.ndarray:
                 if 'esq' in select:
@@ -109,7 +109,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
                 ga_0 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a15m310'],**result['ga_min'].values)
                 ga_1 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a12m310'],**result['ga_min'].values)
                 ga_2 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a09m310'],**result['ga_min'].values)
-        elif select in ['chiral_nlo']:
+        elif select in ['x_nlo_a2']:
             if type(epi) != np.ndarray and type(a) == np.ndarray:
                 ga_0 = gafit.ga_su2(epi=e[0],a=a,**result['ga_min'].values)
                 ga_1 = gafit.ga_su2(epi=e[1],a=a,**result['ga_min'].values)
@@ -227,9 +227,9 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
             ga_L += gafit.ga_su2(epi=epi,a=a,**result['ga_min'].values)
         dga_L = np.zeros_like(ga_L)
         for i,mLi in enumerate(mLplot):
-            if select in ['taylor_esq_1']:
+            if select in ['t_esq_1_a2']:
                 dga_L[i] = gafit.dga_epi_fv(e0,epi,epifv,a,mLi,cov,**result['ga_min'].values)
-            elif select in ['chiral_nlo']:
+            elif select in ['x_nlo_a2']:
                 dga_L[i] = gafit.dfv_su2_nlo(epi,mLi,a,lam_cov=cov,**result['ga_min'].values)
         gn = params_plot['e_clr']['a12m220']
         mkr = params_plot['e_mrkr']['a12m220']
@@ -247,9 +247,9 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
     ############################
     # END                      #
     ############################
-    if args.fits in ['all','taylor_esq_1'] and args.plot:
+    if args.fits in ['all','t_esq_1_a2'] and args.plot:
         # select results
-        select = 'taylor_esq_1'
+        select = 't_esq_1_a2'
         result = rdict[select].copy()
         ############################################
         # gA vs e_pi plot
@@ -302,9 +302,9 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         result['xdict']['epi0'] = args.e0**2
         result['xdict']['mL'] = np.arange(3,100.1,.1)
         fv_plot(args,params_chipt,params_plot,result,data,ga_L_ax,select)
-    if args.fits in ['all','chiral_nlo'] and args.plot:
+    if args.fits in ['all','x_nlo_a2'] and args.plot:
         # select results
-        select = 'chiral_nlo'
+        select = 'x_nlo_a2'
         result = rdict[select].copy()
         ############################################
         # gA vs e_pi plot
