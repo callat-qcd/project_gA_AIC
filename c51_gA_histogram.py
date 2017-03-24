@@ -62,7 +62,7 @@ def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None):
             i += 1
     else:
         norm = len(bssort)
-        CIidx = {0.025:int(norm*0.025), 0.159:int(norm*0.158655254), 0.500:int(norm*0.5), 0.841:int(norm*0.841344746), 0.975:int(norm*0.975)}
+        CIidx = {0.025:int(norm*0.025), 0.159:int(norm*0.158655254), 0.250:int(norm*0.25), 0.500:int(norm*0.5), 0.750:int(norm*0.75), 0.841:int(norm*0.841344746), 0.975:int(norm*0.975)}
     CI = [bssort[CIidx[0.159]], bssort[CIidx[0.841]], bssort[CIidx[0.500]]]
     print "median: %s" %CI[2]
     print "dCI: %s" %(0.5*(CI[1]-CI[0]))
@@ -130,11 +130,11 @@ def model_avg(boot0,bootn,weights):
 if __name__=='__main__':
     t_esq_1_a2 = read_sql('xcont','t_esq_1_a2')
     gA_tesq1_0, gA_tesq1_n = make_ga(t_esq_1_a2,'t_esq_1_a2')
-    #make_histogram(gA_tesq1_n,title='Taylor series in $\epsilon_\pi^2$',tag='t_esq_1_a2')
+    make_histogram(gA_tesq1_n,title='Taylor series in $\epsilon_\pi^2$',tag='t_esq_1_a2')
 
     x_nlo_a2 = read_sql('xcont','x_nlo_a2')
     gA_xnlo_0, gA_xnlo_n = make_ga(x_nlo_a2,'x_nlo_a2')
-    #make_histogram(gA_xnlo_n,title='SU(2) NLO',tag='x_nlo_a2')
+    make_histogram(gA_xnlo_n,title='SU(2) NLO',tag='x_nlo_a2')
 
     # model average
     # get Akaike weights
