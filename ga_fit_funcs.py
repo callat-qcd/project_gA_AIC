@@ -311,7 +311,7 @@ def fit_gA(args,p,data,ini_vals):
         #print('AICc = 2k - 2 ln(exp(-chisq/2)) + 2k(k+1) / (Nd - k - 1)')
         #print('    k = n_lam, %d; Nd = number of data, %d;' %(len(ga_min.values),CS.p['l_d']))
         #print('AICc = %.3f\n' %aicc(ga_min.fval,CS.p['l_d'],len(ga_min.values)))
-        return {'ga_fit':ga_fit, 'dga_fit':dga_fit, 'xdict':CS.xdict.copy(), 'ga_min':ga_min}
+        return {'ga_fit':ga_fit, 'dga_fit':dga_fit, 'xdict':dict(CS.xdict), 'ga_min':ga_min}
     # record b0 and bs results to DB
     def bs_to_db(p,ga_min,select):
         print('make sqlite db and table')
@@ -333,12 +333,11 @@ def fit_gA(args,p,data,ini_vals):
             cur,conn = sql.id_name_nbs_result_insert(\
                 cur,conn,p,select,bs+1,str(ga_min_bs.values).replace("'",'\"'))
 
-    # initialized ChiSq class
-    CS = ChiSq(args,p,data)
     # collect result
     rdict = dict()
     # choose fit function
     if args.fits in ['all','t_esq_1_a2']:
+        CS = ChiSq(args,p,data)
         select = 't_esq_1_a2'
         print('gA = c0 + c1*(epi**2-e0**2) + ca2 * (a/w0)**2\n')
         # do the minimization
@@ -348,6 +347,7 @@ def fit_gA(args,p,data,ini_vals):
         if args.bs:
             bs_to_db(p,ga_min,select)
     if args.fits in ['all','x_nlo_a2']:
+        CS = ChiSq(args,p,data)
         select = 'x_nlo_a2'
         print('gA = NLO SU(2) + FV + a**2, g0fv == g0\n')
         # do the minimization
