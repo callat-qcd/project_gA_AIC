@@ -49,6 +49,7 @@ def parse_input():
         t_a2
         t_e_1_a2
         t_e_2_a2
+        t_esq_1_a0
         t_esq_1_a2
         t_esq_2_a2
         x_nlo_a2
@@ -102,9 +103,12 @@ def ini_vals(select):
     elif select in ['x_nlo_a2']:
         return {'g0':1.25,'error_g0':0.05,'c2':-1,'error_c2':0.05,\
                 'ca2':-0.1,'error_ca2':0.02}
-    if select in ['t_a2']:
+    elif select in ['t_a2']:
         return {'c0':1.25,'error_c0':0.05,\
                 'ca2':-0.1,'error_ca2':0.02,'g0fv':1.5,'error_g0fv':0.1}
+    elif select in ['t_esq_1_a0']:
+        return {'c0':1.25,'error_c0':0.05,'cm1':-1,'error_cm1':0.05,\
+                'g0fv':1.5,'error_g0fv':0.1}
     else:
         print('initial value is undefined')
         raise SystemExit
