@@ -28,6 +28,8 @@ def read_data(fname,args,p):
     mL_bs    = np.zeros([Nbs,p['l_d']])
     aw0_b0   = np.zeros([p['l_d']])
     aw0_bs   = np.zeros([Nbs,p['l_d']])
+    aSaw0_b0 = np.zeros([p['l_d']])
+    aSaw0_bs = np.zeros([Nbs,p['l_d']])
     eju_bs   = np.zeros_like(ga_bs)
     eju_b0   = np.zeros_like(ga_b0)
     epqsq_bs = np.zeros_like(ga_bs)
@@ -41,6 +43,8 @@ def read_data(fname,args,p):
         mL_b0[i]      = float(c51_data.get_node('/mpiL/'+ens+'/b0').read())
         aw0_bs[:,i]   = c51_data.get_node('/aw0/'+ens+'/bs').read()[0:Nbs]
         aw0_b0[i]     = float(c51_data.get_node('/aw0/'+ens+'/b0').read())
+        aSaw0_bs[:,i] = aw0_bs[:,i] * p['afs'][ens]
+        aSaw0_b0[i]   = aw0_b0[i] * p['afs'][ens]
         eju_bs[:,i]   = c51_data.get_node('/eju/'+ens+'/bs').read()[0:Nbs]
         eju_b0[i]     = float(c51_data.get_node('/eju/'+ens+'/b0').read())
         epqsq_bs[:,i] = c51_data.get_node('/epqsq/'+ens+'/bs').read()[0:Nbs]
@@ -58,6 +62,8 @@ def read_data(fname,args,p):
     data['eju_bs']   = eju_bs
     data['epqsq_b0'] = epqsq_b0
     data['epqsq_bs'] = epqsq_bs
+    data['aSaw0_bs'] = aSaw0_bs
+    data['aSaw0_b0'] = aSaw0_b0
     c51_data.close()
     return data
 
@@ -486,7 +492,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         result['xdict']['epi0'] = args.e0**2
         result['xdict']['mL'] = np.arange(3,100.1,.1)
         fv_plot(args,params_chipt,params_plot,result,data,ga_L_ax,select)
-    if args.fits in ['all','xma_nlo_a2'] and args.plot:
+    if args.fits in ['other','xma_nlo_a2'] and args.plot:
         # select results
         select = 'xma_nlo_a2'
         result = rdict[select].copy()

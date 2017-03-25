@@ -198,6 +198,7 @@ class ChiSq():
         self.epi_b0 = data['epi_b0']
         self.mL_b0 = data['mL_b0']
         self.aw0_b0 = data['aw0_b0']
+        self.aSaw0_b0 = data['aSaw0_b0']
         self.eju_b0 = data['eju_b0']
         self.epqsq_b0 = data['epqsq_b0']
         if not args.error_epi:
@@ -206,16 +207,18 @@ class ChiSq():
         else:
             self.epi_bs = data['epi_bs']
             self.eju_bs = data['eju_bs']
-        if not args.error_a:
+        if not args.error_mL:
             self.mL_bs = data['mL_bs'].mean(axis=0) + np.zeros_like(data['mL_bs'])
         else:
             self.mL_bs = data['mL_bs']
         if not args.error_a:
             self.aw0_bs = data['aw0_bs'].mean(axis=0) + np.zeros_like(data['aw0_bs'])
+            self.aSaw0_bs = data['aSaw0_bs'].mean(axis=0) + np.zeros_like(data['aSaw0_bs'])
             self.epqsq_bs = data['epqsq_bs'].mean(axis=0) + np.zeros_like(data['epqsq_bs'])
         else:
             self.aw0_bs = data['aw0_bs']
             self.epqsq_bs = data['epqsq_bs']
+            self.aSaw0_bs = data['aSaw0_bs']
         self.do_bs = False
         self.FV_class = FV_function(self.epi_b0,self.mL_b0)
         self.FV_class_bs = FV_function(self.epi_bs,self.mL_bs)
@@ -232,6 +235,8 @@ class ChiSq():
             return self.t_esq_1_a0
         elif select in ['x_nlo_a2']:
             return self.x_nlo_a2
+        elif select in ['x_nlo_aSa2']:
+            return self.x_nlo_aSa2
         elif select in ['xma_nlo_a2']:
             return self.xma_nlo_a2
         else:
@@ -290,6 +295,29 @@ class ChiSq():
         f    += self.FV_class.dgaFV(g0)
         if self.args.error_x:
             fbs  = ga_su2(epi=self.epi_bs,a=self.aw0_bs,**cdict)
+            fbs += self.FV_class_bs.dgaFV(g0)
+            cov  = np.var( self.ga_bs - fbs,axis=0)
+        else:
+            cov = self.ga_bs.var(axis=0)
+        chisq = np.sum( (y-f)**2 / cov )
+        return chisq
+    def x_nlo_aSa2(self,g0,c2,ca2):
+        ''' chipt function defined as function of epi '''
+        self.xphys = self.p['epi_phys']
+        self.xdict = {'epi':self.xphys}
+        if self.do_bs:
+            y     = self.ga_bs[self.bs]
+            x     = self.epi_bs[self.bs]
+            xa    = self.aSaw0_bs[self.bs]
+        else:
+            y     = self.ga_b0
+            x     = self.epi_b0
+            xa    = self.aSaw0_b0
+        cdict = {'g0':g0, 'ca2':ca2, 'c2':c2}
+        f     = ga_su2(epi=x,a=xa,**cdict)
+        f    += self.FV_class.dgaFV(g0)
+        if self.args.error_x:
+            fbs  = ga_su2(epi=self.epi_bs,a=self.aSaw0_bs,**cdict)
             fbs += self.FV_class_bs.dgaFV(g0)
             cov  = np.var( self.ga_bs - fbs,axis=0)
         else:
@@ -377,6 +405,8 @@ class ChiSq():
         else:
             cov = self.ga_bs.var(axis=0)
         chisq = np.sum( (y-f)**2 / cov )
+        if self.args.g0b != None:
+            chisq += (g0b - self.args.g0b[0])**2 / self.args.g0b[1]**2
         return chisq
 
 def fit_gA(args,p,data,ini_vals):
@@ -398,7 +428,7 @@ def fit_gA(args,p,data,ini_vals):
             x0 = CS.x0
             ga_fit = ga_epi(a=0,**params)
             dga_fit = dga_epi(epi0=x0,epi=np.array([xphys]),a=0,lam_cov=cov2,**ga_min.values)
-        elif select in ['x_nlo_a2']:
+        elif select in ['x_nlo_a2','x_nlo_aSa2']:
             ga_fit = ga_su2(a=0,**params)
             dga_fit = dga_su2(epi=np.array([xphys]),a=0,lam_cov=cov,**ga_min.values)
         elif select in ['xma_nlo_a2']:
@@ -459,6 +489,16 @@ def fit_gA(args,p,data,ini_vals):
         rdict[select] = print_output(CS,ga_min,select)
         if args.bs:
             bs_to_db(p,ga_min,select)
+    if args.fits in ['all','x_nlo_aSa2']:
+        CS = ChiSq(args,p,data)
+        select = 'x_nlo_aSa2'
+        print('gA = NLO SU(2) + FV + alphaS * a**2, g0fv == g0\n')
+        # do the minimization
+        ga_min = minimize(CS.select_chisq(select),ini_vals(select))
+        # print outputs
+        rdict[select] = print_output(CS,ga_min,select)
+        if args.bs:
+            bs_to_db(p,ga_min,select)
     if args.fits in ['all','t_a2']:
         CS = ChiSq(args,p,data)
         select = 't_a2'
@@ -479,7 +519,7 @@ def fit_gA(args,p,data,ini_vals):
         rdict[select] = print_output(CS,ga_min,select)
         if args.bs:
             bs_to_db(p,ga_min,select)
-    if args.fits in ['all','xma_nlo_a2']:
+    if args.fits in ['xma_nlo_a2']:# taken out of all cause not constrained by data
         CS = ChiSq(args,p,data)
         select = 'xma_nlo_a2'
         print('gA = MA NLO SU(2) + FV, g0fv == g0\n')
