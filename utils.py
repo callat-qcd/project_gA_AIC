@@ -96,7 +96,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
             color = [params_plot['e_clr']['a15m310'],
                 params_plot['e_clr']['a12m310'],params_plot['e_clr']['a09m310']]
             ls = ['-','-','-']
-        if select in ['t_esq_1_a2','t_e_1_a2','t_esq_2_a2','t_e_2_a2','t_a2']:
+        if select in ['t_a2','t_esq_1_a2','t_e_1_a2','t_esq_2_a2','t_e_2_a2']:
             e0 = result['xdict']['epi0']
             if type(epi) != np.ndarray and type(a) == np.ndarray:
                 if 'esq' in select or 't_a2' in select:
@@ -106,9 +106,12 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
                 ga_1 = gafit.ga_epi(epi0=e0,epi=ep[1],a=a,**result['ga_min'].values)
                 ga_2 = gafit.ga_epi(epi0=e0,epi=ep[2],a=a,**result['ga_min'].values)
             elif type(a) != np.ndarray and type(epi) == np.ndarray:
-                ga_0 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a15m310'],**result['ga_min'].values)
-                ga_1 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a12m310'],**result['ga_min'].values)
-                ga_2 = gafit.ga_epi(e0,epi,params_chipt['aw0']['a09m310'],**result['ga_min'].values)
+                a0 = params_chipt['aw0']['a15m310']
+                a1 = params_chipt['aw0']['a12m310']
+                a2 = params_chipt['aw0']['a09m310']
+                ga_0 = gafit.ga_epi(epi0=e0,epi=epi,a=a0,**result['ga_min'].values)
+                ga_1 = gafit.ga_epi(epi0=e0,epi=epi,a=a1,**result['ga_min'].values)
+                ga_2 = gafit.ga_epi(epi0=e0,epi=epi,a=a2,**result['ga_min'].values)
         elif select in ['x_nlo_a2']:
             if type(epi) != np.ndarray and type(a) == np.ndarray:
                 ga_0 = gafit.ga_su2(epi=e[0],a=a,**result['ga_min'].values)

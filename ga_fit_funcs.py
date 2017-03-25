@@ -124,14 +124,10 @@ def dfv_su2_nlo(epi,mL,a,g0,c2,ca2,lam_cov):
 ###################################
 def ga_epi(epi0,epi,a,c0,ca2=0,cm1=0,cm2=0,cam2=0,**kwargs):
     ga = c0
-    if ca2 != 0:
-        ga += ca2*a**2
-    if cm1 != 0:
-        ga += cm1*(epi - epi0)
-    if cm2 != 0:
-        ga += cm2*(epi - epi0)**2
-    if cam2 != 0:
-        ga += cam2 * (epi - epi0)**2 * a**2
+    ga += ca2*a**2
+    ga += cm1*(epi - epi0)
+    ga += cm2*(epi - epi0)**2
+    ga += cam2 * (epi - epi0)**2 * a**2
     return ga
 def dga_epi(epi0,epi,a,c0,lam_cov,ca2=0,cm1=0,cm2=0,cam2=0,**kwargs):
     if type(epi) != np.ndarray and type(a) == np.ndarray:
