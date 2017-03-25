@@ -27,7 +27,7 @@ def read_sql(tblname,fitname):
 
 def make_ga(data,fitname):
     p = dps.gA_parameters()
-    if fitname in ['t_esq_1_a2']:
+    if fitname in ['t_esq_1_a2','t_a2']:
         gA = np.array([ff.ga_epi(epi0=data[0]['e0']**2,epi=p['epi_phys']**2,a=0,**data[i]) for i in range(len(data))])
     elif fitname in ['x_nlo_a2']:
         gA = np.array([ff.ga_su2(epi=p['epi_phys'],a=0,**data[i]) for i in range(len(data))])
@@ -143,24 +143,31 @@ if __name__=='__main__':
     gA_xnlo_0, gA_xnlo_n = make_ga(x_nlo_a2,'x_nlo_a2')
     make_histogram(gA_xnlo_n,title='SU(2) NLO',tag='x_nlo_a2')
 
+    t_a2 = read_sql('xcont','t_a2')
+    gA_t_0, gA_t_n = make_ga(t_a2,'t_a2')
+    make_histogram(gA_t_n,title='Taylor constant',tag='t_a2')
+
     # model average
     # get Akaike weights
     data0 = dict()
     data0['t_esq_1_a2'] = t_esq_1_a2[0]
     data0['x_nlo_a2'] = x_nlo_a2[0]
+    data0['t_a2'] = t_a2[0]
     w = akaike_weights(data0)
     # average models
     boot0 = dict()
     boot0['t_esq_1_a2'] = gA_tesq1_0
     boot0['x_nlo_a2'] = gA_xnlo_0
+    boot0['t_a2'] = gA_t_0
     bootn = dict()
     bootn['t_esq_1_a2'] = gA_tesq1_n
     bootn['x_nlo_a2'] = gA_xnlo_n
+    bootn['t_a2'] = gA_t_n
     mean, sdev = model_avg(boot0,bootn,w)
     print mean, sdev
     # average histogram
-    whist = np.concatenate((w['t_esq_1_a2']*np.ones_like(gA_tesq1_n),w['x_nlo_a2']*np.ones_like(gA_xnlo_n)),axis=0)
-    cbootn = np.concatenate((gA_tesq1_n, gA_xnlo_n),axis=0)
+    whist = np.concatenate((w['t_esq_1_a2']*np.ones_like(gA_tesq1_n),w['x_nlo_a2']*np.ones_like(gA_xnlo_n),w['t_a2']*np.ones_like(gA_t_n)),axis=0)
+    cbootn = np.concatenate((gA_tesq1_n, gA_xnlo_n, gA_t_n),axis=0)
     idx = np.argsort(cbootn)
     make_histogram(cbootn[idx],title='Akaike average',tag='AIC',weights=whist[idx])
 
