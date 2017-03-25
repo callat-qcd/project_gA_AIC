@@ -5,6 +5,13 @@ import numpy as np
 import ga_fit_funcs as ff
 import data_params as dps
 import matplotlib.pyplot as plt
+def run_from_ipython():
+    try:
+        __IPYTHON__
+        return True
+    except NameError:
+        return False
+plt.ion()
 
 def read_sql(tblname,fitname):
     conn = sqlite3.connect('c51_ga.sqlite')
@@ -156,3 +163,9 @@ if __name__=='__main__':
     cbootn = np.concatenate((gA_tesq1_n, gA_xnlo_n),axis=0)
     idx = np.argsort(cbootn)
     make_histogram(cbootn[idx],title='Akaike average',tag='AIC',weights=whist[idx])
+
+plt.ioff()
+if run_from_ipython():
+    plt.show(block=False)
+else:
+    plt.show()
