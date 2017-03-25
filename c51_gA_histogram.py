@@ -5,6 +5,18 @@ import numpy as np
 import ga_fit_funcs as ff
 import data_params as dps
 import matplotlib.pyplot as plt
+
+def fit_list():
+    # select model set here
+    model_set = ['t_esq_1_a2', 't_esq_1_a0', 't_a2', 'x_nlo_a2']
+    title = dict()
+    title['t_esq_1_a2'] = 'Taylor $C_0+C_1\epsilon_\pi^2+a^2$'
+    title['t_esq_1_a0'] = 'Taylor $C_0+C_1\epsilon_\pi^2$'
+    title['t_a2'] = 'Taylor $C_0+a^2$'
+    title['x_nlo_a2'] = 'SU(2) NLO $\chi$pt $+a^2$'
+    return model_set, title
+    
+
 def run_from_ipython():
     try:
         __IPYTHON__
@@ -19,18 +31,18 @@ def read_sql(tblname,fitname):
     #conn.load_extension("./json1")
     c = conn.cursor()
     c.execute("SELECT nbs, result FROM %s WHERE name='%s';" %(tblname,fitname))
-    data = c.fetchall()
-    data_clean = dict()
-    for i in range(len(data)):
-        data_clean[data[i][0]] = json.loads(data[i][1])
-    return data_clean
+    mle = c.fetchall()
+    mle_clean = dict()
+    for i in range(len(mle)):
+        mle_clean[mle[i][0]] = json.loads(mle[i][1])
+    return mle_clean
 
-def make_ga(data,fitname):
+def make_ga(mle,fitname):
     p = dps.gA_parameters()
-    if fitname in ['t_esq_1_a2','t_a2']:
-        gA = np.array([ff.ga_epi(epi0=data[0]['e0']**2,epi=p['epi_phys']**2,a=0,**data[i]) for i in range(len(data))])
+    if fitname in ['t_esq_1_a2','t_esq_1_a0','t_a2']:
+        gA = np.array([ff.ga_epi(epi0=mle[0]['e0']**2,epi=p['epi_phys']**2,a=0,**mle[i]) for i in range(len(mle))])
     elif fitname in ['x_nlo_a2']:
-        gA = np.array([ff.ga_su2(epi=p['epi_phys'],a=0,**data[i]) for i in range(len(data))])
+        gA = np.array([ff.ga_su2(epi=p['epi_phys'],a=0,**mle[i]) for i in range(len(mle))])
     boot0 = gA[0]
     bootn = np.sort(gA[1:])
     return boot0, bootn
@@ -121,8 +133,6 @@ def akaike_weights(data0):
     w = dict()
     for k in data0.keys():
         w[k] = np.exp(-0.5*(data0[k]['AIC']-AICm))/num
-        print k, data0[k]['AIC']
-    print w
     return w
 
 def model_avg(boot0,bootn,weights):
@@ -132,47 +142,47 @@ def model_avg(boot0,bootn,weights):
     sdev = 0
     for k in bootn.keys():
         sdev += weights[k]*np.sqrt(np.var(bootn[k]) + (boot0[k] - cv)**2)
+    print "AIC average result: %s +- %s" %(cv, sdev)
     return cv, sdev
 
-if __name__=='__main__':
-    t_esq_1_a2 = read_sql('xcont','t_esq_1_a2')
-    gA_tesq1_0, gA_tesq1_n = make_ga(t_esq_1_a2,'t_esq_1_a2')
-    make_histogram(gA_tesq1_n,title='Taylor series in $\epsilon_\pi^2$',tag='t_esq_1_a2')
+def remake_ga(tag,title):
+    mle = read_sql('xcont',tag)
+    boot0, bootn = make_ga(mle,tag)
+    make_histogram(bootn,title=title,tag=tag)
+    return mle, boot0, bootn
 
-    x_nlo_a2 = read_sql('xcont','x_nlo_a2')
-    gA_xnlo_0, gA_xnlo_n = make_ga(x_nlo_a2,'x_nlo_a2')
-    make_histogram(gA_xnlo_n,title='SU(2) NLO',tag='x_nlo_a2')
-
-    t_a2 = read_sql('xcont','t_a2')
-    gA_t_0, gA_t_n = make_ga(t_a2,'t_a2')
-    make_histogram(gA_t_n,title='Taylor constant',tag='t_a2')
-
-    # model average
-    # get Akaike weights
-    data0 = dict()
-    data0['t_esq_1_a2'] = t_esq_1_a2[0]
-    data0['x_nlo_a2'] = x_nlo_a2[0]
-    data0['t_a2'] = t_a2[0]
-    w = akaike_weights(data0)
-    # average models
-    boot0 = dict()
-    boot0['t_esq_1_a2'] = gA_tesq1_0
-    boot0['x_nlo_a2'] = gA_xnlo_0
-    boot0['t_a2'] = gA_t_0
-    bootn = dict()
-    bootn['t_esq_1_a2'] = gA_tesq1_n
-    bootn['x_nlo_a2'] = gA_xnlo_n
-    bootn['t_a2'] = gA_t_n
+def AICavg(model_set,mle,boot0,bootn):
+    # construct akaike weights
+    mle0 = dict()
+    for m in model_set:
+        mle0[m] = mle[m][0]
+    w = akaike_weights(mle0)
+    # avg models
     mean, sdev = model_avg(boot0,bootn,w)
-    print mean, sdev
-    # average histogram
-    whist = np.concatenate((w['t_esq_1_a2']*np.ones_like(gA_tesq1_n),w['x_nlo_a2']*np.ones_like(gA_xnlo_n),w['t_a2']*np.ones_like(gA_t_n)),axis=0)
-    cbootn = np.concatenate((gA_tesq1_n, gA_xnlo_n, gA_t_n),axis=0)
-    idx = np.argsort(cbootn)
+    # make histogram
+    whist = []
+    cbootn = []
+    for m in model_set:
+        whist.append(w[m]*np.ones_like(bootn[m]))
+        cbootn.append(bootn[m])
+    whist = np.array(whist).flatten()
+    cbootn = np.array(cbootn).flatten()
+    idx = np.argsort(cbootn) # sort
     make_histogram(cbootn[idx],title='Akaike average',tag='AIC',weights=whist[idx])
 
-plt.ioff()
-if run_from_ipython():
-    plt.show(block=False)
-else:
-    plt.show()
+if __name__=='__main__':
+    model_set, title = fit_list()
+    # remake gA for all selected models
+    mle = dict()
+    boot0 = dict()
+    bootn = dict()
+    for x in model_set:
+        mle[x],boot0[x],bootn[x] = remake_ga(x, title[x])
+    # calculate Akaike average
+    AICavg(model_set,mle,boot0,bootn)
+
+    plt.ioff()
+    if run_from_ipython():
+        plt.show(block=False)
+    else:
+        plt.show()
