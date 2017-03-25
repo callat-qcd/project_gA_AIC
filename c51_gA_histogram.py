@@ -86,6 +86,7 @@ def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None):
         CIidx = {0.025:int(norm*0.025), 0.159:int(norm*0.158655254), 0.250:int(norm*0.25), 0.500:int(norm*0.5), 0.750:int(norm*0.75), 0.841:int(norm*0.841344746), 0.975:int(norm*0.975)}
     CI = [bssort[CIidx[0.159]], bssort[CIidx[0.841]], bssort[CIidx[0.500]]]
     print(title)
+    print("nbs: %s" %len(bssort))
     print("median: %s" %CI[2])
     print("dCI: %s" %(0.5*(CI[1]-CI[0])))
     print("std: %s" %np.std(bssort))
