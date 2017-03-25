@@ -36,7 +36,7 @@ def ga_su2(epi,a,g0,c2,c3=0,ca2=0,ca4=0,afs=0,cafs=0,**kwargs):
     ga += cafs * a**2 * afs
     ga += ca4 * a**4
     return ga
-def dga_su2(epi,a,g0,c2,lam_cov,c3=0,ca2=0,ca4=0,afs=0,cafs=0):
+def dga_su2(epi,a,g0,c2,lam_cov,c3=0,ca2=0,ca4=0,afs=0,cafs=0,**kwargs):
     if type(epi) != np.ndarray and type(a) == np.ndarray:
         ones = np.ones_like(a)
     elif type(a) != np.ndarray and type(epi) == np.ndarray:
@@ -70,6 +70,16 @@ def ga_su2_nnlo(epi,g0,c3):
     # NNLO relation - only non-analytic
     ga = g0 * c3 * epi**3
     return ga
+def ga_ma_nlo(epi,eju,epqsq,a,g0,g0b,c2,ca2,afs=0,cafs=0,**kwargs):
+    ga   = g0
+    ga  += -(g0 + 2*g0**3) * epi**2 * np.log(epi**2)
+    ga  += c2 * epi**2
+    g0ma = g0 +(24.*g0**3 -15*g0**2*g0b+14*g0*g0b**2+g0b**3)/12
+    ga  += -g0ma*(eju**2*np.log(eju**2) -epi**2*np.log(epi**2))
+    ga  += -g0*g0b**2 *epqsq * (1+np.log(epi**2))
+    ga  += ca2 * a**2
+    return ga
+
 
 ###################################
 #  FV FUNCTIONS
@@ -185,21 +195,27 @@ class ChiSq():
         self.p = p
         self.ga_bs = data['ga_bs']
         self.ga_b0 = data['ga_b0']
+        self.epi_b0 = data['epi_b0']
+        self.mL_b0 = data['mL_b0']
+        self.aw0_b0 = data['aw0_b0']
+        self.eju_b0 = data['eju_b0']
+        self.epqsq_b0 = data['epqsq_b0']
         if not args.error_epi:
             self.epi_bs = data['epi_bs'].mean(axis=0) + np.zeros_like(data['epi_bs'])
+            self.eju_bs = data['eju_bs'].mean(axis=0) + np.zeros_like(data['eju_bs'])
         else:
             self.epi_bs = data['epi_bs']
-        self.epi_b0 = data['epi_b0']
+            self.eju_bs = data['eju_bs']
         if not args.error_a:
             self.mL_bs = data['mL_bs'].mean(axis=0) + np.zeros_like(data['mL_bs'])
         else:
             self.mL_bs = data['mL_bs']
-        self.mL_b0 = data['mL_b0']
         if not args.error_a:
             self.aw0_bs = data['aw0_bs'].mean(axis=0) + np.zeros_like(data['aw0_bs'])
+            self.epqsq_bs = data['epqsq_bs'].mean(axis=0) + np.zeros_like(data['epqsq_bs'])
         else:
             self.aw0_bs = data['aw0_bs']
-        self.aw0_b0 = data['aw0_b0']
+            self.epqsq_bs = data['epqsq_bs']
         self.do_bs = False
         self.FV_class = FV_function(self.epi_b0,self.mL_b0)
         self.FV_class_bs = FV_function(self.epi_bs,self.mL_bs)
@@ -216,6 +232,8 @@ class ChiSq():
             return self.t_esq_1_a0
         elif select in ['x_nlo_a2']:
             return self.x_nlo_a2
+        elif select in ['xma_nlo_a2']:
+            return self.xma_nlo_a2
         else:
             print('chisq is unselected')
             raise SystemExit
@@ -228,20 +246,20 @@ class ChiSq():
         if self.do_bs:
             y     = self.ga_bs[self.bs]
             x     = (self.epi_bs**2)[self.bs]
+            xa    = self.aw0_bs[self.bs]
         else:
             y     = self.ga_b0
             x     = self.epi_b0**2
-        ybs   = self.ga_bs.mean(axis=0)
-        xbs   = (self.epi_bs**2).mean(axis=0)
-        cdict = {'c0':c0, 'ca2':ca2, 'cm1':cm1}
-        f     = ga_epi(self.x0,x,self.aw0_b0,**cdict)
+            xa    = self.aw0_b0
+        cdict = {'c0':c0, 'ca2':ca2, 'cm1':cm1} 
+        f     = ga_epi(epi0=self.x0,epi=x,a=xa,**cdict)
         f    += self.FV_class.dgaFV(g0fv)
         # IF error_x = True, construct covariance from ybs - f(xbs)
         # where some of the x-errors may have been turned off
         # ELSE
         #   construct simple covariance from only gA_bs
         if self.args.error_x:
-            fbs  = ga_epi(self.x0,(self.epi_bs**2),self.aw0_bs,**cdict)
+            fbs  = ga_epi(self.x0,(self.epi_bs**2),a=self.aw0_bs,**cdict)
             fbs += self.FV_class_bs.dgaFV(g0fv)
             cov  = np.var( self.ga_bs - fbs,axis=0)
         else:
@@ -262,16 +280,16 @@ class ChiSq():
         if self.do_bs:
             y     = self.ga_bs[self.bs]
             x     = self.epi_bs[self.bs]
+            xa    = self.aw0_bs[self.bs]
         else:
             y     = self.ga_b0
             x     = self.epi_b0
-        ybs   = self.ga_bs.mean(axis=0)
-        xbs   = self.epi_bs.mean(axis=0)
+            xa    = self.aw0_b0
         cdict = {'g0':g0, 'ca2':ca2, 'c2':c2}
-        f     = ga_su2(x,self.aw0_b0,**cdict)
+        f     = ga_su2(epi=x,a=xa,**cdict)
         f    += self.FV_class.dgaFV(g0)
         if self.args.error_x:
-            fbs  = ga_su2(self.epi_bs,self.aw0_bs,**cdict)
+            fbs  = ga_su2(epi=self.epi_bs,a=self.aw0_bs,**cdict)
             fbs += self.FV_class_bs.dgaFV(g0)
             cov  = np.var( self.ga_bs - fbs,axis=0)
         else:
@@ -287,13 +305,13 @@ class ChiSq():
         if self.do_bs:
             y     = self.ga_bs[self.bs]
             x     = (self.epi_bs**2)[self.bs]
+            xa    = self.aw0_bs[self.bs]
         else:
             y     = self.ga_b0
             x     = self.epi_b0**2
-        ybs   = self.ga_bs.mean(axis=0)
-        xbs   = (self.epi_bs**2).mean(axis=0)
+            xa    = self.aw0_b0
         cdict = {'c0':c0, 'ca2':ca2}
-        f     = ga_epi(self.x0,x,self.aw0_b0,**cdict)
+        f     = ga_epi(epi0=self.x0,epi=x,a=xa,**cdict)
         f    += self.FV_class.dgaFV(g0fv)
         if self.args.error_x:
             fbs  = ga_epi(self.x0,(self.epi_bs**2),self.aw0_bs,**cdict)
@@ -301,11 +319,6 @@ class ChiSq():
             cov  = np.var( self.ga_bs - fbs,axis=0)
         else:
             cov = self.ga_bs.var(axis=0)
-        '''
-        we have no PQ data on same ensembles so
-        y,f,cov are all len(l_d) arrays
-        numpy will properly do the multiplication/division
-        '''
         chisq += np.sum( (y-f)**2 / cov )
         if self.args.g0fv != None:
             chisq += (g0fv - self.args.g0fv[0])**2 / self.args.g0fv[1]**2
@@ -319,32 +332,51 @@ class ChiSq():
         if self.do_bs:
             y     = self.ga_bs[self.bs]
             x     = (self.epi_bs**2)[self.bs]
+            xa    = self.aw0_bs[self.bs]
         else:
             y     = self.ga_b0
             x     = self.epi_b0**2
-        ybs   = self.ga_bs.mean(axis=0)
-        xbs   = (self.epi_bs**2).mean(axis=0)
+            xa    = self.aw0_b0
         cdict = {'c0':c0, 'cm1':cm1}
-        f     = ga_epi(self.x0,x,self.aw0_b0,**cdict)
+        f     = ga_epi(epi0=self.x0,epi=x,a=xa,**cdict)
         f    += self.FV_class.dgaFV(g0fv)
-        # IF error_x = True, construct covariance from ybs - f(xbs)
-        # where some of the x-errors may have been turned off
-        # ELSE
-        #   construct simple covariance from only gA_bs
         if self.args.error_x:
-            fbs  = ga_epi(self.x0,(self.epi_bs**2),self.aw0_bs,**cdict)
+            fbs  = ga_epi(epi0=self.x0,epi=(self.epi_bs**2),a=self.aw0_bs,**cdict)
             fbs += self.FV_class_bs.dgaFV(g0fv)
             cov  = np.var( self.ga_bs - fbs,axis=0)
         else:
             cov = self.ga_bs.var(axis=0)
-        '''
-        we have no PQ data on same ensembles so
-        y,f,cov are all len(l_d) arrays
-        numpy will properly do the multiplication/division
-        '''
         chisq += np.sum( (y-f)**2 / cov )
         if self.args.g0fv != None:
             chisq += (g0fv - self.args.g0fv[0])**2 / self.args.g0fv[1]**2
+        return chisq
+    def xma_nlo_a2(self,g0,c2,ca2,g0b):
+        ''' chipt function defined as function of epi '''
+        self.xphys = self.p['epi_phys']
+        self.xdict = {'epi':self.xphys}
+        if self.do_bs:
+            y     = self.ga_bs[self.bs]
+            x     = self.epi_bs[self.bs]
+            xju   = self.eju_bs[self.bs]
+            xa    = self.aw0_bs[self.bs]
+            epqsq = self.epqsq_bs[self.bs]
+        else:
+            y     = self.ga_b0
+            x     = self.epi_b0
+            xju   = self.eju_b0
+            xa    = self.aw0_b0
+            epqsq = self.epqsq_b0
+        cdict = {'g0':g0, 'c2':c2, 'g0b':g0b, 'ca2':ca2}
+        f     = ga_ma_nlo(epi=x,eju=xju,epqsq=epqsq,a=xa,**cdict)
+        f    += self.FV_class.dgaFV(g0)
+        if self.args.error_x: #ga_ma_nlo(epi,eju,epqsq,a,g0,g0b,c2,afs=0,cafs=0,**kwargs)
+            fbs  = ga_ma_nlo(\
+                epi=self.epi_bs,eju=self.eju_bs,epqsq=self.epqsq_bs,a=self.aw0_bs,**cdict)
+            fbs += self.FV_class_bs.dgaFV(g0)
+            cov  = np.var( self.ga_bs - fbs,axis=0)
+        else:
+            cov = self.ga_bs.var(axis=0)
+        chisq = np.sum( (y-f)**2 / cov )
         return chisq
 
 def fit_gA(args,p,data,ini_vals):
@@ -369,6 +401,10 @@ def fit_gA(args,p,data,ini_vals):
         elif select in ['x_nlo_a2']:
             ga_fit = ga_su2(a=0,**params)
             dga_fit = dga_su2(epi=np.array([xphys]),a=0,lam_cov=cov,**ga_min.values)
+        elif select in ['xma_nlo_a2']:
+            cov2 = cov[0:-1,0:-1]
+            ga_fit = ga_su2(a=0,**params)
+            dga_fit = dga_su2(epi=np.array([xphys]),a=0,lam_cov=cov2,**ga_min.values)
         else:
             print(select+' not added to print output')
         print('gA = %.7f +- %.7f' %(ga_fit,dga_fit))
@@ -378,9 +414,6 @@ def fit_gA(args,p,data,ini_vals):
                 print('g0fv prior = %f +- %f' %(args.g0fv[0],args.g0fv[1]))
         print('AIC = 2k - 2 ln(exp(-chisq/2))')
         print('AIC = %.4f\n' %aic(ga_min.fval,len(ga_min.values)))
-        #print('AICc = 2k - 2 ln(exp(-chisq/2)) + 2k(k+1) / (Nd - k - 1)')
-        #print('    k = n_lam, %d; Nd = number of data, %d;' %(len(ga_min.values),CS.p['l_d']))
-        #print('AICc = %.3f\n' %aicc(ga_min.fval,CS.p['l_d'],len(ga_min.values)))
         return {'ga_fit':ga_fit, 'dga_fit':dga_fit, 'xdict':dict(CS.xdict), 'ga_min':ga_min}
     # record b0 and bs results to DB
     def bs_to_db(p,ga_min,select):
@@ -440,6 +473,16 @@ def fit_gA(args,p,data,ini_vals):
         CS = ChiSq(args,p,data)
         select = 't_esq_1_a0'
         print('gA = c0 + c1*(epi**2-e0**2) + FV\n')
+        # do the minimization
+        ga_min = minimize(CS.select_chisq(select),ini_vals(select))
+        # print outputs
+        rdict[select] = print_output(CS,ga_min,select)
+        if args.bs:
+            bs_to_db(p,ga_min,select)
+    if args.fits in ['all','xma_nlo_a2']:
+        CS = ChiSq(args,p,data)
+        select = 'xma_nlo_a2'
+        print('gA = MA NLO SU(2) + FV, g0fv == g0\n')
         # do the minimization
         ga_min = minimize(CS.select_chisq(select),ini_vals(select))
         # print outputs
