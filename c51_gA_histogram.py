@@ -7,6 +7,8 @@ import data_params as dps
 import matplotlib.pyplot as plt
 
 def fit_list():
+    # select nbs bootstraps from sqlite
+    nbs = 5000
     # select model set here
     model_set = ['t_esq_1_a2', 't_esq_1_a0', 't_a2', 'x_nlo_a2']
     title = dict()
@@ -14,7 +16,7 @@ def fit_list():
     title['t_esq_1_a0'] = 'Taylor $C_0+C_1\epsilon_\pi^2$'
     title['t_a2'] = 'Taylor $C_0+a^2$'
     title['x_nlo_a2'] = 'SU(2) NLO $\chi$pt $+a^2$'
-    return model_set, title
+    return model_set, title, nbs
     
 
 def run_from_ipython():
@@ -25,12 +27,12 @@ def run_from_ipython():
         return False
 plt.ion()
 
-def read_sql(tblname,fitname):
+def read_sql(tblname,fitname,nbs):
     conn = sqlite3.connect('c51_ga.sqlite')
     #conn.enable_load_extension(True)
     #conn.load_extension("./json1")
     c = conn.cursor()
-    c.execute("SELECT nbs, result FROM %s WHERE name='%s';" %(tblname,fitname))
+    c.execute("SELECT nbs, result FROM %s WHERE name='%s' AND nbs<=%s;" %(tblname,fitname,nbs))
     mle = c.fetchall()
     mle_clean = dict()
     for i in range(len(mle)):
@@ -145,8 +147,8 @@ def model_avg(boot0,bootn,weights):
     print "AIC average result: %s +- %s" %(cv, sdev)
     return cv, sdev
 
-def remake_ga(tag,title):
-    mle = read_sql('xcont',tag)
+def remake_ga(tag,title,nbs):
+    mle = read_sql('xcont',tag,nbs)
     boot0, bootn = make_ga(mle,tag)
     make_histogram(bootn,title=title,tag=tag)
     return mle, boot0, bootn
@@ -171,13 +173,13 @@ def AICavg(model_set,mle,boot0,bootn):
     make_histogram(cbootn[idx],title='Akaike average',tag='AIC',weights=whist[idx])
 
 if __name__=='__main__':
-    model_set, title = fit_list()
+    model_set, title, nbs = fit_list()
     # remake gA for all selected models
     mle = dict()
     boot0 = dict()
     bootn = dict()
     for x in model_set:
-        mle[x],boot0[x],bootn[x] = remake_ga(x, title[x])
+        mle[x],boot0[x],bootn[x] = remake_ga(x,title[x],nbs)
     # calculate Akaike average
     AICavg(model_set,mle,boot0,bootn)
 
