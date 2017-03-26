@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 def fit_list():
     # select nbs bootstraps from sqlite
-    nbs = 500
+    nbs = 1000
     # select model set here
     model_set = ['c0_nofv','t_esq0_a0','t_esq1_a0','t_esq0_a2','t_esq1_a2','x_nlo_a0','x_nlo_a2']
     title = dict()
@@ -152,22 +152,23 @@ def akaike_weights(data0):
 
 def model_avg(boot0,bootn,weights):
     cv = 0
-    tmp = np.zeros([len(boot0.keys()),nbs])
+    gAbs = np.zeros([len(boot0.keys()),len(bootn[bootn.keys()[0]])])
+    print gAbs.shape
     for i,k in enumerate(boot0.keys()):
         cv += weights[k]*boot0[k]
-        tmp[i] = bootn[k]
-    print tmp.mean(), tmp.std()
+        gAbs[i] = weights[k]*bootn[k]
+    gAbs_w = gAbs.sum(axis=0)
     sdev = 0
     for k in bootn.keys():
         sdev += weights[k]*np.sqrt(np.var(bootn[k]) + (boot0[k] - cv)**2)
     aic_min = max(weights, key=lambda k:float(weights[k]))
     mle = read_sql('xcont',aic_min,nbs)
     boot0, bootn = make_ga(mle,aic_min)
-    gAbs,dgA_stat = make_histogram(bootn,title=title[aic_min],tag=aic_min,mk_hist=False)
+    bs_avg,dgA_stat = make_histogram(bootn,title=title[aic_min],tag=aic_min,mk_hist=False)
     print('min %s:\t %s +- %s' %(title[aic_min],boot0,dgA_stat))
     print('AIC average result:      \t %s +- %s' %(cv, sdev))
     print('AIC average result:      \t %.4f +- %.4f +- %.4f'\
-         %(cv,dgA_stat,np.sqrt(sdev**2-dgA_stat**2)))
+         %(cv,gAbs_w.std(),np.sqrt(sdev**2-gAbs_w.var())))
     return cv, sdev
 
 def remake_ga(tag,title,nbs):
