@@ -82,12 +82,12 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         # taylor fit needs g0fv, which infinite volume function doesn't know about
         # so chop of the last element (g0fv) of corrleation matrix
         cov = np.array(result['ga_min'].matrix(correlation=False,skip_fixed=True))
-        if select in ['t_esq_1_a2','t_a2','t_esq_1_a0']:
+        if select in ['t_esq0_a0','t_esq1_a2','t_esq0_a2','t_esq1_a0','t_esq1_a2_ea2']:
             e0 = result['xdict']['epi0']
             ga_plot = gafit.ga_epi(epi0=e0,epi=epi,a=a,**result['ga_min'].values)
             cov2 = cov[0:-1,0:-1]
             dga_plot = gafit.dga_epi(epi0=e0,epi=epi,a=a,lam_cov=cov2,**result['ga_min'].values)
-        elif select in ['x_nlo_a2','x_nlo_aSa2','x_nlo_a2_ea2']:
+        elif select in ['x_nlo_a0','x_nlo_a2','x_nlo_aSa2','x_nlo_a2_ea2']:
             ga_plot = gafit.ga_su2(epi=epi,a=a,**result['ga_min'].values)
             dga_plot = gafit.dga_su2(epi=epi,a=a,lam_cov=cov,**result['ga_min'].values)
         elif select in ['xma_nlo_a2']:
@@ -118,10 +118,10 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
             color = [params_plot['e_clr']['a15m310'],
                 params_plot['e_clr']['a12m310'],params_plot['e_clr']['a09m310']]
             ls = ['-','-','-']
-        if select in ['t_a2','t_esq_1_a2','t_esq_1_a0']:
+        if select in ['t_esq0_a2','t_esq1_a2','t_esq1_a0','t_esq1_a2_ea2']:
             e0 = result['xdict']['epi0']
             if type(epi) != np.ndarray and type(a) == np.ndarray:
-                if 'esq' in select or 't_a2' in select:
+                if 'esq' in select or 't_esq0_a2' in select:
                     ep = e**2
                 else: ep = e
                 ga_0 = gafit.ga_epi(epi0=e0,epi=ep[0],a=a,**result['ga_min'].values)
@@ -252,9 +252,9 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
             ga_L += gafit.ga_su2(epi=epi,a=a,**result['ga_min'].values)
         dga_L = np.zeros_like(ga_L)
         for i,mLi in enumerate(mLplot):
-            if select in ['t_esq_1_a2']:
+            if select in ['t_esq1_a2','t_esq0_a2','t_esq1_a2_ea2','t_esq1_a0']:
                 dga_L[i] = gafit.dga_epi_fv(e0,epi,epifv,a,mLi,cov,**result['ga_min'].values)
-            elif select in ['x_nlo_a2']:
+            elif select in ['x_nlo_a0','x_nlo_a2','x_nlo_a2','x_nlo_aSa2','x_nlo_a2_ea2']:
                 dga_L[i] = gafit.dfv_su2_nlo(epi,mLi,a,lam_cov=cov,**result['ga_min'].values)
         gn = params_plot['e_clr']['a12m220']
         mkr = params_plot['e_mrkr']['a12m220']
@@ -272,14 +272,15 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
     ############################
     # END                      #
     ############################
-    if args.fits in ['all','t_esq_1_a2'] and args.plot:
+    if args.fits in ['all','t_esq1_a2'] and args.plot:
         # select results
-        select = 't_esq_1_a2'
+        select = 't_esq1_a2'
         result = rdict[select].copy()
+        print('plotting %s' %select)
         ############################################
         # gA vs e_pi plot
         ############################################
-        print('gA vs epi: Taylor e_pi^2')
+        #print('gA vs epi: Taylor e_pi^2')
         # initialize figure
         plt.figure('gA vs epi Taylor epsq',figsize=params_plot['fig_gldn'])
         ga_mpi_ax = plt.axes(params_plot['ga_axes'])
@@ -300,7 +301,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         # gA vs asq plot
         ############################################
-        print('gA vs asq: Taylor e_pi^2')
+        #print('gA vs asq: Taylor e_pi^2')
         # initialize figure
         plt.figure('gA vs asq Taylor epsq',figsize=params_plot['fig_gldn'])
         ga_a_ax = plt.axes(params_plot['ga_axes'])
@@ -320,7 +321,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         # gA vs L plot
         ############################################
-        print('gA vs L:   Taylor e_pi^2')
+        #print('gA vs L:   Taylor e_pi^2')
         # initialize figure
         plt.figure('gA vs L Taylor epsq',figsize=params_plot['fig_gldn'])
         ga_L_ax = plt.axes(params_plot['mL_axes'])
@@ -331,10 +332,11 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         # select results
         select = 'x_nlo_a2'
         result = rdict[select].copy()
+        print('plotting %s' %select)
         ############################################
         # gA vs e_pi plot
         ############################################
-        print('gA vs epi: SU(2) NLO')
+        #print('gA vs epi: SU(2) NLO')
         # initialize figure
         plt.figure('gA vs epi SU(2) NLO',figsize=params_plot['fig_gldn'])
         ga_mpi_ax = plt.axes(params_plot['ga_axes'])
@@ -355,7 +357,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         # gA vs asq plot
         ############################################
-        print('gA vs asq: SU(2) NLO')
+        #print('gA vs asq: SU(2) NLO')
         # initialize figure
         plt.figure('gA vs asq SU(2) NLO',figsize=params_plot['fig_gldn'])
         ga_a_ax = plt.axes(params_plot['ga_axes'])
@@ -375,76 +377,22 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         # gA vs L plot
         ############################################
-        print('gA vs L:   SU(2) NLO')
+        #print('gA vs L:   SU(2) NLO')
         # initialize figure
         plt.figure('gA vs L SU(2) NLO',figsize=params_plot['fig_gldn'])
         ga_L_ax = plt.axes(params_plot['mL_axes'])
         result['xdict']['epi0'] = args.e0**2
         result['xdict']['mL'] = np.arange(3,100.1,.1)
         fv_plot(args,params_chipt,params_plot,result,data,ga_L_ax,select)
-    if args.fits in ['all','x_nlo_a2_ea2'] and args.plot:
+    if args.fits in ['all','t_esq0_a2'] and args.plot:
         # select results
-        select = 'x_nlo_a2_ea2'
+        select = 't_esq0_a2'
         result = rdict[select].copy()
+        print('plotting %s' %select)
         ############################################
         # gA vs e_pi plot
         ############################################
-        print('gA vs epi: SU(2) NLO + a**2 epi**2')
-        # initialize figure
-        plt.figure('gA vs epi SU2 NLO aesq',figsize=params_plot['fig_gldn'])
-        ga_mpi_ax = plt.axes(params_plot['ga_axes'])
-        leg1 = []
-        leg2 = []
-        # define x dependence
-        result['xdict']['epi_plot'] = np.arange(0.001,0.41,.001)
-        result['xdict']['xplot'] = np.arange(0.001,0.41,.001)
-        result['xdict']['a'] = 0
-        # continuum limit plot
-        leg2 = continuum_plot(args,params_plot,result,ga_mpi_ax,leg2,select)
-        # finite a plots
-        leg1 = discrete_plot(args,params_plot,data,result,ga_mpi_ax,leg1,select)
-        # add data points
-        leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_mpi_ax,leg1)
-        # finish plot
-        finish_plot(args,params_chipt,params_plot,result,ga_mpi_ax,leg1,leg2)
-        ############################################
-        # gA vs asq plot
-        ############################################
-        print('gA vs asq: SU(2) NLO + a**2 epi**2')
-        # initialize figure
-        plt.figure('gA vs asq SU2 NLO aesq',figsize=params_plot['fig_gldn'])
-        ga_a_ax = plt.axes(params_plot['ga_axes'])
-        leg1 = []
-        leg2 = []
-        result['xdict']['epi_plot'] = params_chipt['epi_phys']
-        result['xdict']['xplot'] = np.arange(0,1.01,.01)**2
-        result['xdict']['a'] = np.arange(0,1.01,.01)
-        # continuum limit plot
-        leg2 = continuum_plot(args,params_plot,result,ga_a_ax,leg2,select)
-        # finite a plots
-        leg1 = discrete_plot(args,params_plot,data,result,ga_a_ax,leg1,select)
-        # add data points
-        leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_a_ax,leg1)
-        # finish plot
-        finish_plot(args,params_chipt,params_plot,result,ga_a_ax,leg1,leg2)
-        ############################################
-        # gA vs L plot
-        ############################################
-        print('gA vs L:   SU(2) NLO')
-        # initialize figure
-        plt.figure('gA vs L SU2 NLO aesq',figsize=params_plot['fig_gldn'])
-        ga_L_ax = plt.axes(params_plot['mL_axes'])
-        result['xdict']['epi0'] = args.e0**2
-        result['xdict']['mL'] = np.arange(3,100.1,.1)
-        fv_plot(args,params_chipt,params_plot,result,data,ga_L_ax,select)
-    if args.fits in ['all','t_a2'] and args.plot:
-        # select results
-        select = 't_a2'
-        result = rdict[select].copy()
-        ############################################
-        # gA vs e_pi plot
-        ############################################
-        print('gA vs epi: Taylor0 epsq')
+        #print('gA vs epi: Taylor0 epsq')
         # initialize figure
         plt.figure('gA vs epi Taylor0 epsq',figsize=params_plot['fig_gldn'])
         ga_mpi_ax = plt.axes(params_plot['ga_axes'])
@@ -465,7 +413,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         # gA vs asq plot
         ############################################
-        print('gA vs asq: Taylor0 e_pi^2')
+        #print('gA vs asq: Taylor0 e_pi^2')
         # initialize figure
         plt.figure('gA vs asq Taylor0 epsq',figsize=params_plot['fig_gldn'])
         ga_a_ax = plt.axes(params_plot['ga_axes'])
@@ -485,21 +433,22 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         # gA vs L plot
         ############################################
-        print('gA vs L:   Taylor0 e_pi^2')
+        #print('gA vs L:   Taylor0 e_pi^2')
         # initialize figure
         plt.figure('gA vs L Taylor0 epsq',figsize=params_plot['fig_gldn'])
         ga_L_ax = plt.axes(params_plot['mL_axes'])
         result['xdict']['epi0'] = args.e0**2
         result['xdict']['mL'] = np.arange(3,100.1,.1)
         fv_plot(args,params_chipt,params_plot,result,data,ga_L_ax,select)
-    if args.fits in ['all','t_esq_1_a0'] and args.plot:
+    if args.fits in ['all','t_esq1_a0'] and args.plot:
         # select results
-        select = 't_esq_1_a0'
+        select = 't_esq1_a0'
         result = rdict[select].copy()
+        print('plotting %s' %select)
         ############################################
         # gA vs e_pi plot
         ############################################
-        print('gA vs epi: Taylor epsq a0')
+        #print('gA vs epi: Taylor epsq a0')
         # initialize figure
         plt.figure('gA vs epi Taylor epsq a0',figsize=params_plot['fig_gldn'])
         ga_mpi_ax = plt.axes(params_plot['ga_axes'])
@@ -520,7 +469,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         # gA vs asq plot
         ############################################
-        print('gA vs asq: Taylor epsq a0')
+        #print('gA vs asq: Taylor epsq a0')
         # initialize figure
         plt.figure('gA vs asq Taylor epsq a0',figsize=params_plot['fig_gldn'])
         ga_a_ax = plt.axes(params_plot['ga_axes'])
@@ -540,9 +489,121 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         # gA vs L plot
         ############################################
-        print('gA vs L:   Taylor epsq a0')
+        #print('gA vs L:   Taylor epsq a0')
         # initialize figure
         plt.figure('gA vs L Taylor epsq a0',figsize=params_plot['fig_gldn'])
+        ga_L_ax = plt.axes(params_plot['mL_axes'])
+        result['xdict']['epi0'] = args.e0**2
+        result['xdict']['mL'] = np.arange(3,100.1,.1)
+        fv_plot(args,params_chipt,params_plot,result,data,ga_L_ax,select)
+    if args.fits in ['other','x_nlo_a2_ea2'] and args.plot:
+        # select results
+        select = 'x_nlo_a2_ea2'
+        result = rdict[select].copy()
+        print('plotting %s' %select)
+        ############################################
+        # gA vs e_pi plot
+        ############################################
+        #print('gA vs epi: SU(2) NLO + a**2 epi**2')
+        # initialize figure
+        plt.figure('gA vs epi SU2 NLO aesq',figsize=params_plot['fig_gldn'])
+        ga_mpi_ax = plt.axes(params_plot['ga_axes'])
+        leg1 = []
+        leg2 = []
+        # define x dependence
+        result['xdict']['epi_plot'] = np.arange(0.001,0.41,.001)
+        result['xdict']['xplot'] = np.arange(0.001,0.41,.001)
+        result['xdict']['a'] = 0
+        # continuum limit plot
+        leg2 = continuum_plot(args,params_plot,result,ga_mpi_ax,leg2,select)
+        # finite a plots
+        leg1 = discrete_plot(args,params_plot,data,result,ga_mpi_ax,leg1,select)
+        # add data points
+        leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_mpi_ax,leg1)
+        # finish plot
+        finish_plot(args,params_chipt,params_plot,result,ga_mpi_ax,leg1,leg2)
+        ############################################
+        # gA vs asq plot
+        ############################################
+        #print('gA vs asq: SU(2) NLO + a**2 epi**2')
+        # initialize figure
+        plt.figure('gA vs asq SU2 NLO aesq',figsize=params_plot['fig_gldn'])
+        ga_a_ax = plt.axes(params_plot['ga_axes'])
+        leg1 = []
+        leg2 = []
+        result['xdict']['epi_plot'] = params_chipt['epi_phys']
+        result['xdict']['xplot'] = np.arange(0,1.01,.01)**2
+        result['xdict']['a'] = np.arange(0,1.01,.01)
+        # continuum limit plot
+        leg2 = continuum_plot(args,params_plot,result,ga_a_ax,leg2,select)
+        # finite a plots
+        leg1 = discrete_plot(args,params_plot,data,result,ga_a_ax,leg1,select)
+        # add data points
+        leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_a_ax,leg1)
+        # finish plot
+        finish_plot(args,params_chipt,params_plot,result,ga_a_ax,leg1,leg2)
+        ############################################
+        # gA vs L plot
+        ############################################
+        #print('gA vs L:   SU(2) NLO')
+        # initialize figure
+        plt.figure('gA vs L SU2 NLO aesq',figsize=params_plot['fig_gldn'])
+        ga_L_ax = plt.axes(params_plot['mL_axes'])
+        result['xdict']['epi0'] = args.e0**2
+        result['xdict']['mL'] = np.arange(3,100.1,.1)
+        fv_plot(args,params_chipt,params_plot,result,data,ga_L_ax,select)
+    if args.fits in ['other','t_esq1_a2_ea2'] and args.plot:
+        # select results
+        select = 't_esq1_a2_ea2'
+        result = rdict[select].copy()
+        print('plotting %s' %select)
+        ############################################
+        # gA vs e_pi plot
+        ############################################
+        #print('gA vs epi: Taylor e_pi^2 + asq epsq')
+        # initialize figure
+        plt.figure('gA vs epi Taylor epsq + asq epsq',figsize=params_plot['fig_gldn'])
+        ga_mpi_ax = plt.axes(params_plot['ga_axes'])
+        leg1 = []
+        leg2 = []
+        # define x dependence
+        result['xdict']['epi_plot'] = np.arange(0.001,0.41,.001)**2
+        result['xdict']['xplot'] = np.arange(0.001,0.41,.001)
+        result['xdict']['a'] = 0
+        # continuum limit plot
+        leg2 = continuum_plot(args,params_plot,result,ga_mpi_ax,leg2,select)
+        # finite a plots
+        leg1 = discrete_plot(args,params_plot,data,result,ga_mpi_ax,leg1,select)
+        # add data points
+        leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_mpi_ax,leg1)
+        # finish plot
+        finish_plot(args,params_chipt,params_plot,result,ga_mpi_ax,leg1,leg2)
+        ############################################
+        # gA vs asq plot
+        ############################################
+        #print('gA vs asq: Taylor e_pi^2 + asq epsq')
+        # initialize figure
+        plt.figure('gA vs asq Taylor epsq + asq epsq',figsize=params_plot['fig_gldn'])
+        ga_a_ax = plt.axes(params_plot['ga_axes'])
+        leg1 = []
+        leg2 = []
+        result['xdict']['epi_plot'] = params_chipt['epi_phys']**2
+        result['xdict']['xplot'] = np.arange(0,1.01,.01)**2
+        result['xdict']['a'] = np.arange(0,1.01,.01)
+        # continuum limit plot
+        leg2 = continuum_plot(args,params_plot,result,ga_a_ax,leg2,select)
+        # finite a plots
+        leg1 = discrete_plot(args,params_plot,data,result,ga_a_ax,leg1,select)
+        # add data points
+        leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_a_ax,leg1)
+        # finish plot
+        finish_plot(args,params_chipt,params_plot,result,ga_a_ax,leg1,leg2)
+        ############################################
+        # gA vs L plot
+        ############################################
+        #print('gA vs L:   Taylor e_pi^2 + asq epsq')
+        # initialize figure
+        plt.figure('gA vs L Taylor epsq + asq epsq',figsize=params_plot['fig_gldn'])
         ga_L_ax = plt.axes(params_plot['mL_axes'])
         result['xdict']['epi0'] = args.e0**2
         result['xdict']['mL'] = np.arange(3,100.1,.1)
@@ -551,10 +612,11 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         # select results
         select = 'xma_nlo_a2'
         result = rdict[select].copy()
+        print('plotting %s' %select)
         ############################################
         # gA vs e_pi plot
         ############################################
-        print('gA vs epi: MA SU(2) NLO')
+        #print('gA vs epi: MA SU(2) NLO')
         # initialize figure
         plt.figure('gA vs epi MA SU(2) NLO',figsize=params_plot['fig_gldn'])
         ga_mpi_ax = plt.axes(params_plot['ga_axes'])
@@ -576,7 +638,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         # gA vs asq plot
         ############################################
-        print('gA vs asq: SU(2) NLO')
+        #print('gA vs asq: SU(2) NLO')
         # initialize figure
         plt.figure('gA vs asq SU(2) NLO',figsize=params_plot['fig_gldn'])
         ga_a_ax = plt.axes(params_plot['ga_axes'])
@@ -596,7 +658,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         # gA vs L plot
         ############################################
-        print('gA vs L:   SU(2) NLO')
+        #print('gA vs L:   SU(2) NLO')
         # initialize figure
         plt.figure('gA vs L SU(2) NLO',figsize=params_plot['fig_gldn'])
         ga_L_ax = plt.axes(params_plot['mL_axes'])

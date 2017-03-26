@@ -8,14 +8,17 @@ import matplotlib.pyplot as plt
 
 def fit_list():
     # select nbs bootstraps from sqlite
-    nbs = 5000
+    nbs = 1000
     # select model set here
-    model_set = ['t_esq_1_a2', 't_esq_1_a0', 't_a2', 'x_nlo_a2']
+    model_set = ['c0_nofv','t_esq0_a0','t_esq1_a0','t_esq0_a2','t_esq1_a2','x_nlo_a0','x_nlo_a2']
     title = dict()
-    title['t_esq_1_a2'] = 'Taylor $C_0+C_1\epsilon_\pi^2+a^2$'
-    title['t_esq_1_a0'] = 'Taylor $C_0+C_1\epsilon_\pi^2$'
-    title['t_a2'] = 'Taylor $C_0+a^2$'
-    title['x_nlo_a2'] = 'SU(2) NLO $\chi$pt $+a^2$'
+    title['c0_nofv']      = r'Constant'
+    title['t_esq0_a0']    = r'Taylor $C_0$ + FV'
+    title['t_esq1_a2']    = r'Taylor $C_0+C_1\epsilon_\pi^2+a^2$'
+    title['t_esq1_a0']    = r'Taylor $C_0+C_1\epsilon_\pi^2$'
+    title['t_esq0_a2']    = r'Taylor $C_0+a^2$'
+    title['x_nlo_a0']     = r'SU(2) NLO $\chi$PT w/o $a^2$'
+    title['x_nlo_a2']     = r'SU(2) NLO $\chi$PT $+a^2$'
     return model_set, title, nbs
     
 
@@ -41,9 +44,9 @@ def read_sql(tblname,fitname,nbs):
 
 def make_ga(mle,fitname):
     p = dps.gA_parameters()
-    if fitname in ['t_esq_1_a2','t_esq_1_a0','t_a2']:
+    if fitname in ['t_esq1_a2','t_esq1_a0','t_esq0_a2']:
         gA = np.array([ff.ga_epi(epi0=mle[0]['e0']**2,epi=p['epi_phys']**2,a=0,**mle[i]) for i in range(len(mle))])
-    elif fitname in ['x_nlo_a2']:
+    elif fitname in ['x_nlo_a2','x_nlo_a2_ea2']:
         gA = np.array([ff.ga_su2(epi=p['epi_phys'],a=0,**mle[i]) for i in range(len(mle))])
     boot0 = gA[0]
     bootn = np.sort(gA[1:])

@@ -45,9 +45,9 @@ def parse_input():
         help='plot extrapolations? [%(default)s]')
     parser.add_argument('-f','--fits',default='all',action='store',\
         help='''what type of extrapolation to perform? [%(default)s]
-        all [ t_a2, t_esq_1_a0, t_esq_1_a2, x_nlo_a2, x_nlo_a2_ea2 ]
-        other [ xma_nlo_a2, x_nlo_aSa2 ]
-        future [ t_e_1_a2, t_e_2_a2, t_esq_2_a2, x_nnlo_a2 ]
+        all    [ c0_nofv, t_esq0_a0, t_esq0_a2, t_esq1_a0, t_esq1_a2, x_nlo_a2 ]
+        other  [ x_nlo_a2_ea2, t_esq1_a2, xma_nlo_a2, x_nlo_aSa2 ]
+        future [ t_e1_a2, t_e2_a2, t_esq2_a2, x_nnlo_a2 ]
         ''')
     parser.add_argument('--file',type=str,default='c51_gA_mdwf.h5',action='store',
         help='hdf5 input file name [%(default)s]')
@@ -91,21 +91,32 @@ def parse_input():
 
 def ini_vals(select):
     # initial values for minimizer
-    if select in ['t_esq_1_a2','t_esq_1_aSa2']:
+    # TAYLOR FITS
+    if select in ['t_esq1_a2','t_esq_1_aSa2']:
         return {'c0':1.25,'error_c0':0.05,'cm1':-1,'error_cm1':0.05,\
                 'ca2':-0.1,'error_ca2':0.02,'g0fv':1.5,'error_g0fv':0.1}
+    elif select in ['c0_nofv']:
+        return {'c0':1.25,'error_c0':0.05}
+    elif select in ['t_esq0_a0']:
+        return {'c0':1.25,'error_c0':0.05,'g0fv':1.5,'error_g0fv':0.1}
+    elif select in ['t_esq0_a2']:
+        return {'c0':1.25,'error_c0':0.05,\
+                'ca2':-0.1,'error_ca2':0.02,'g0fv':1.5,'error_g0fv':0.1}
+    elif select in ['t_esq1_a0']:
+        return {'c0':1.25,'error_c0':0.05,'cm1':-1,'error_cm1':0.05,\
+                'g0fv':1.5,'error_g0fv':0.1}
+    elif select in ['t_esq1_a2_ea2']:
+        return {'c0':1.25,'error_c0':0.05,'cm1':-1,'error_cm1':0.05,\
+                'ca2':-0.1,'error_ca2':0.02,'cam2':1,'error_cam2':0.1,'g0fv':1.5,'error_g0fv':0.1}
+    # Chiral PT FITS
     elif select in ['x_nlo_a2','x_nlo_aSa2']:
         return {'g0':1.25,'error_g0':0.05,'c2':-1,'error_c2':0.05,\
                 'ca2':-0.1,'error_ca2':0.02}
+    elif select in ['x_nlo_a0']:
+        return {'g0':1.25,'error_g0':0.05,'c2':-1,'error_c2':0.05}
     elif select in ['x_nlo_a2_ea2']:
         return {'g0':1.25,'error_g0':0.05,'c2':-1,'error_c2':0.05,\
-                'ca2':-0.1,'error_ca2':0.02,'cea2':.1,'error_cea2':.01}
-    elif select in ['t_a2']:
-        return {'c0':1.25,'error_c0':0.05,\
-                'ca2':-0.1,'error_ca2':0.02,'g0fv':1.5,'error_g0fv':0.1}
-    elif select in ['t_esq_1_a0']:
-        return {'c0':1.25,'error_c0':0.05,'cm1':-1,'error_cm1':0.05,\
-                'g0fv':1.5,'error_g0fv':0.1}
+                'ca2':-0.1,'error_ca2':0.02,'cam2':.1,'error_cam2':.01}
     elif select in ['xma_nlo_a2']:
         return {'g0':1.25,'error_g0':0.05,'c2':-5,'error_c2':0.05,\
                 'g0b':0.5,'error_g0b':0.05,'ca2':-0.1,'error_ca2':0.02}
