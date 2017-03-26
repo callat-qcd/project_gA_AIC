@@ -44,9 +44,9 @@ def read_sql(tblname,fitname,nbs):
 
 def make_ga(mle,fitname):
     p = dps.gA_parameters()
-    if fitname in ['t_esq1_a2','t_esq1_a0','t_esq0_a2']:
+    if fitname in ['c0_nofv','t_esq0_a0','t_esq1_a2','t_esq1_a0','t_esq0_a2']:
         gA = np.array([ff.ga_epi(epi0=mle[0]['e0']**2,epi=p['epi_phys']**2,a=0,**mle[i]) for i in range(len(mle))])
-    elif fitname in ['x_nlo_a2','x_nlo_a2_ea2']:
+    elif fitname in ['x_nlo_a0','x_nlo_a2']:
         gA = np.array([ff.ga_su2(epi=p['epi_phys'],a=0,**mle[i]) for i in range(len(mle))])
     boot0 = gA[0]
     bootn = np.sort(gA[1:])
@@ -61,7 +61,7 @@ def CI68(bins, CI):
             pass
     return bin68
 
-def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None):
+def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None, mk_hist=True):
     # get confidence interval index
     if type(weights) == np.ndarray:
         norm = sum(weights)
@@ -88,47 +88,54 @@ def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None):
         norm = len(bssort)
         CIidx = {0.025:int(norm*0.025), 0.159:int(norm*0.158655254), 0.250:int(norm*0.25), 0.500:int(norm*0.5), 0.750:int(norm*0.75), 0.841:int(norm*0.841344746), 0.975:int(norm*0.975)}
     CI = [bssort[CIidx[0.159]], bssort[CIidx[0.841]], bssort[CIidx[0.500]]]
-    print(title)
-    print("nbs: %s" %len(bssort))
-    print("median: %s" %CI[2])
-    print("dCI: %s" %(0.5*(CI[1]-CI[0])))
-    print("std: %s" %np.std(bssort))
 
-    CI2s = [bssort[CIidx[0.025]], bssort[CIidx[0.975]], bssort[CIidx[0.500]]]
+    if mk_hist:
+        print('==================================================')
+        print(title)
+        print("nbs: %s" %len(bssort))
+        print("median: %s" %CI[2])
+        print("dCI: %s" %(0.5*(CI[1]-CI[0])))
+        print("std: %s" %np.std(bssort))
 
-    # set histogram color
-    color = '#b36ae2'
-    # set binsize
-    IQR = bssort[CIidx[0.750]] - bssort[CIidx[0.250]]
-    binsize = 2.*IQR/(len(bssort)**(1./3.)) # Freedman-Diaconis rule
-    setbins = int((bssort[-1]-bssort[0])/binsize)
-    # start plot
-    fig = plt.figure(figsize=(7,4.326237))
-    ax = plt.axes([0.15,0.15,0.8,0.8])
-    n, bins, patches = ax.hist(bssort, setbins, facecolor=color,ec='black',alpha=0.2,histtype='stepfilled',weights=weights)
-    bin95 = CI68(bins, CI2s)
-    n, bins, patches = ax.hist(bssort, bin95, facecolor=color,ec='black',alpha=0.5,histtype='stepfilled',weights=weights)
-    bin68 = CI68(bins, CI)
-    n, bins, patches = ax.hist(bssort, bin68, facecolor=color,ec='black',histtype='stepfilled',weights=weights)
-    n, bins, patches = ax.hist(bssort, setbins, histtype='step',ec='black',weights=weights)
-    n, bins, patches = ax.hist(bssort, bin95, histtype='step',ec='black',weights=weights)
-    n, bins, patches = ax.hist(bssort, bin68, histtype='step',ec='black',weights=weights)
-    x = np.delete(bins, -1)
-    if param==None:
-        ax.set_xlabel('$g_{A}$', fontsize=20)
+        CI2s = [bssort[CIidx[0.025]], bssort[CIidx[0.975]], bssort[CIidx[0.500]]]
+
+        # set histogram color
+        color = '#b36ae2'
+        # set binsize
+        IQR = bssort[CIidx[0.750]] - bssort[CIidx[0.250]]
+        binsize = 2.*IQR/(len(bssort)**(1./3.)) # Freedman-Diaconis rule
+        setbins = int((bssort[-1]-bssort[0])/binsize)
+        # start plot
+        fig = plt.figure(figsize=(7,4.326237))
+        ax = plt.axes([0.15,0.15,0.8,0.8])
+        n, bins, patches = ax.hist(bssort, setbins, facecolor=color,ec='black',alpha=0.2,histtype='stepfilled',weights=weights)
+        bin95 = CI68(bins, CI2s)
+        n, bins, patches = ax.hist(bssort, bin95, facecolor=color,ec='black',alpha=0.5,histtype='stepfilled',weights=weights)
+        bin68 = CI68(bins, CI)
+        n, bins, patches = ax.hist(bssort, bin68, facecolor=color,ec='black',histtype='stepfilled',weights=weights)
+        n, bins, patches = ax.hist(bssort, setbins, histtype='step',ec='black',weights=weights)
+        n, bins, patches = ax.hist(bssort, bin95, histtype='step',ec='black',weights=weights)
+        n, bins, patches = ax.hist(bssort, bin68, histtype='step',ec='black',weights=weights)
+        x = np.delete(bins, -1)
+        if param==None:
+            ax.set_xlabel('$g_{A}$', fontsize=20)
+        else:
+            ax.set_xlabel('%s' %param, fontsize=20)
+        ax.xaxis.set_tick_params(labelsize=16)
+        ax.yaxis.set_tick_params(labelsize=0)
+        ax.set_title(title,x=0.15,y=0.68/0.8,fontsize=20,bbox=dict(facecolor=color))
+        #plt.suptitle('%s' %ens,x=0.2,y=0.9,fontsize=20)
+        #plt.tight_layout()
+        frame = plt.gca()
+        frame.axes.get_yaxis().set_visible(False)
+        plt.draw()
+        plt.show()
+        fig.savefig('gA_%s.pdf' %tag, format='pdf')
+        return 0
     else:
-        ax.set_xlabel('%s' %param, fontsize=20)
-    ax.xaxis.set_tick_params(labelsize=16)
-    ax.yaxis.set_tick_params(labelsize=0)
-    ax.set_title(title,x=0.15,y=0.68/0.8,fontsize=20,bbox=dict(facecolor=color))
-    #plt.suptitle('%s' %ens,x=0.2,y=0.9,fontsize=20)
-    #plt.tight_layout()
-    frame = plt.gca()
-    frame.axes.get_yaxis().set_visible(False)
-    plt.draw()
-    plt.show()
-    fig.savefig('gA_%s.pdf' %tag, format='pdf')
-    return 0
+        return CI[2],np.std(bssort)
+        print("                 %s +- %s" %(CI[2],np.std(bssort)))
+
 
 def akaike_weights(data0):
     AIC = []
@@ -140,6 +147,7 @@ def akaike_weights(data0):
     w = dict()
     for k in data0.keys():
         w[k] = np.exp(-0.5*(data0[k]['AIC']-AICm))/num
+        print('    %s;\taic %.3f:\twieght %.4f' %(k,data0[k]['AIC'],w[k]))
     return w
 
 def model_avg(boot0,bootn,weights):
@@ -149,7 +157,12 @@ def model_avg(boot0,bootn,weights):
     sdev = 0
     for k in bootn.keys():
         sdev += weights[k]*np.sqrt(np.var(bootn[k]) + (boot0[k] - cv)**2)
-    print "AIC average result: %s +- %s" %(cv, sdev)
+    print('AIC average result:        \t %s +- %s' %(cv, sdev))
+    aic_min = max(weights, key=lambda k:float(weights[k]))
+    mle = read_sql('xcont',aic_min,nbs)
+    boot0, bootn = make_ga(mle,aic_min)
+    gA,dgA = make_histogram(bootn,title=title[aic_min],tag=aic_min,mk_hist=False)
+    print('min %s:\t %s +- %s' %(title[aic_min],gA,dgA))
     return cv, sdev
 
 def remake_ga(tag,title,nbs):
@@ -159,6 +172,8 @@ def remake_ga(tag,title,nbs):
     return mle, boot0, bootn
 
 def AICavg(model_set,mle,boot0,bootn):
+    print('==================================================')
+    print('AIC AVG gA')
     # construct akaike weights
     mle0 = dict()
     for m in model_set:
