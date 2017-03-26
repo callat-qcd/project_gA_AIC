@@ -153,7 +153,6 @@ def akaike_weights(data0):
 def model_avg(boot0,bootn,weights):
     cv = 0
     gAbs = np.zeros([len(boot0.keys()),len(bootn[bootn.keys()[0]])])
-    print gAbs.shape
     for i,k in enumerate(boot0.keys()):
         cv += weights[k]*boot0[k]
         gAbs[i] = weights[k]*bootn[k]
