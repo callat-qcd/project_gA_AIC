@@ -22,7 +22,7 @@ def minimize(chisq,ini_vals):
 ########################################
 #  gA SU(2) ChiPT vs e_pi = mpi / 4piFpi
 ########################################
-def ga_su2(epi,a,g0,c2,c3=0,ca2=0,ca4=0,afs=0,cafs=0,**kwargs):
+def ga_su2(epi,a,g0,c2,c3=0,ca2=0,cea2=0,ca4=0,afs=0,cafs=0,**kwargs):
     # LO relations
     ga = g0
     # asq
@@ -33,10 +33,11 @@ def ga_su2(epi,a,g0,c2,c3=0,ca2=0,ca4=0,afs=0,cafs=0,**kwargs):
     # NNLO relation - only non-analytic
     ga += g0 * c3 * epi**3
     # more continuum extrapolation terms
+    ga += cea2 * epi**2 * a**2
     ga += cafs * a**2 * afs
     ga += ca4 * a**4
     return ga
-def dga_su2(epi,a,g0,c2,lam_cov,c3=0,ca2=0,ca4=0,afs=0,cafs=0,**kwargs):
+def dga_su2(epi,a,g0,c2,lam_cov,c3=0,ca2=0,cea2=0,ca4=0,afs=0,cafs=0,**kwargs):
     if type(epi) != np.ndarray and type(a) == np.ndarray:
         ones = np.ones_like(a)
     elif type(a) != np.ndarray and type(epi) == np.ndarray:
@@ -45,13 +46,16 @@ def dga_su2(epi,a,g0,c2,lam_cov,c3=0,ca2=0,ca4=0,afs=0,cafs=0,**kwargs):
         print('a or epi needs to be an int/float and the other is a numpy array')
         raise SystemExit
     ln = np.log(epi**2)
-    if ca2 == 0 and c3 == 0 and ca4 == 0 and cafs == 0:
+    if ca2 == 0 and c3 == 0 and ca4 == 0 and cafs == 0 and cea2 == 0:
         dgdl = np.array([ones*1 - (1 + 6 * g0**2)*epi**2 * ln, ones*epi**2])
-    elif c3 == 0 and ca4 == 0 and cafs == 0:
+    elif c3 == 0 and ca4 == 0 and cafs == 0 and ca2 != 0 and cea2 != 0:
+        dgdl = np.array([ones*1 - (1 + 6 * g0**2)*epi**2 * ln,\
+            ones*epi**2,ones*a**2,ones*epi**2*a**2])
+    elif c3 == 0 and ca4 == 0 and cafs == 0 and cea2 == 0:
         dgdl = np.array([ones*1 - (1 + 6 * g0**2)*epi**2 * ln, ones*epi**2, ones*a**2])
-    elif ca2 == 0 and ca4 == 0 and cafs == 0:
+    elif ca2 == 0 and ca4 == 0 and cafs == 0 and cea2 == 0:
         dgdl = np.array([ones*1 -(1 +6 *g0**2)*epi**2 *ln +c3*epi**3, ones*epi**2, ones*g0*epi**3])
-    elif ca4 == 0 and cafs == 0:
+    elif ca4 == 0 and cafs == 0 and cea2 == 0:
         dgdl = np.array([ones*1 -(1 +6 *g0**2)*epi**2 *ln +c3*epi**3, ones*epi**2, ones*g0*epi**3, ones*a**2])
     else:
         print('ca4, cafs currently unsupported')
@@ -239,6 +243,8 @@ class ChiSq():
             return self.x_nlo_aSa2
         elif select in ['xma_nlo_a2']:
             return self.xma_nlo_a2
+        elif select in ['x_nlo_a2_ea2']:
+            return self.x_nlo_a2_ea2
         else:
             print('chisq is unselected')
             raise SystemExit
@@ -318,6 +324,29 @@ class ChiSq():
         f    += self.FV_class.dgaFV(g0)
         if self.args.error_x:
             fbs  = ga_su2(epi=self.epi_bs,a=self.aSaw0_bs,**cdict)
+            fbs += self.FV_class_bs.dgaFV(g0)
+            cov  = np.var( self.ga_bs - fbs,axis=0)
+        else:
+            cov = self.ga_bs.var(axis=0)
+        chisq = np.sum( (y-f)**2 / cov )
+        return chisq
+    def x_nlo_a2_ea2(self,g0,c2,ca2,cea2):
+        ''' chipt function defined as function of epi '''
+        self.xphys = self.p['epi_phys']
+        self.xdict = {'epi':self.xphys}
+        if self.do_bs:
+            y     = self.ga_bs[self.bs]
+            x     = self.epi_bs[self.bs]
+            xa    = self.aw0_bs[self.bs]
+        else:
+            y     = self.ga_b0
+            x     = self.epi_b0
+            xa    = self.aw0_b0
+        cdict = {'g0':g0, 'ca2':ca2, 'c2':c2, 'cea2':cea2}
+        f     = ga_su2(epi=x,a=xa,**cdict)
+        f    += self.FV_class.dgaFV(g0)
+        if self.args.error_x:
+            fbs  = ga_su2(epi=self.epi_bs,a=self.aw0_bs,**cdict)
             fbs += self.FV_class_bs.dgaFV(g0)
             cov  = np.var( self.ga_bs - fbs,axis=0)
         else:
@@ -428,8 +457,9 @@ def fit_gA(args,p,data,ini_vals):
             x0 = CS.x0
             ga_fit = ga_epi(a=0,**params)
             dga_fit = dga_epi(epi0=x0,epi=np.array([xphys]),a=0,lam_cov=cov2,**ga_min.values)
-        elif select in ['x_nlo_a2','x_nlo_aSa2']:
+        elif select in ['x_nlo_a2','x_nlo_aSa2','x_nlo_a2_ea2']:
             ga_fit = ga_su2(a=0,**params)
+            print ga_min.values
             dga_fit = dga_su2(epi=np.array([xphys]),a=0,lam_cov=cov,**ga_min.values)
         elif select in ['xma_nlo_a2']:
             cov2 = cov[0:-1,0:-1]
@@ -483,6 +513,16 @@ def fit_gA(args,p,data,ini_vals):
         CS = ChiSq(args,p,data)
         select = 'x_nlo_a2'
         print('gA = NLO SU(2) + FV + a**2, g0fv == g0\n')
+        # do the minimization
+        ga_min = minimize(CS.select_chisq(select),ini_vals(select))
+        # print outputs
+        rdict[select] = print_output(CS,ga_min,select)
+        if args.bs:
+            bs_to_db(p,ga_min,select)
+    if args.fits in ['all','x_nlo_a2_ea2']:
+        CS = ChiSq(args,p,data)
+        select = 'x_nlo_a2_ea2'
+        print('gA = NLO SU(2) + FV + a**2 + epi**2 * a**2, g0fv == g0\n')
         # do the minimization
         ga_min = minimize(CS.select_chisq(select),ini_vals(select))
         # print outputs
