@@ -15,9 +15,9 @@ def fit_list():
     title = dict()
     title['c0_nofv']      = r'Constant'
     title['t_esq0_a0']    = r'Taylor $C_0$ + FV'
-    title['t_esq1_a2']    = r'Taylor $C_0 + \epsilon_\pi^2 +a^2$'
-    title['t_esq1_a0']    = r'Taylor $C_0 + \epsilon_\pi^2$'
-    title['t_esq0_a2']    = r'Taylor $C_0 + a^2$'
+    title['t_esq1_a2']    = r'Taylor $C_0+C_1\epsilon_\pi^2+a^2$'
+    title['t_esq1_a0']    = r'Taylor $C_0+C_1\epsilon_\pi^2$'
+    title['t_esq0_a2']    = r'Taylor $C_0+a^2$'
     title['x_nlo_a0']     = r'SU(2) NLO $\chi$PT w/o $a^2$'
     title['x_nlo_a2']     = r'SU(2) NLO $\chi$PT $+a^2$'
     return model_set, title, nbs
@@ -98,7 +98,6 @@ def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None, mk_
 
         CI2s = [bssort[CIidx[0.025]], bssort[CIidx[0.975]], bssort[CIidx[0.500]]]
 
-        # set histogram color
         color = '#b36ae2'
         # set binsize
         IQR = bssort[CIidx[0.750]] - bssort[CIidx[0.250]]
@@ -106,31 +105,32 @@ def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None, mk_
         setbins = int((bssort[-1]-bssort[0])/binsize)
         # start plot
         fig = plt.figure(figsize=(7,4.326237))
-        ax = plt.axes([0.05,0.17,0.9,0.82])
+        ax = plt.axes([0.15,0.15,0.8,0.8])
         n, bins, patches = ax.hist(bssort, setbins, facecolor=color,ec='black',alpha=0.2,histtype='stepfilled',weights=weights)
         bin95 = CI68(bins, CI2s)
         n, bins, patches = ax.hist(bssort, bin95, facecolor=color,ec='black',alpha=0.5,histtype='stepfilled',weights=weights)
         bin68 = CI68(bins, CI)
         n, bins, patches = ax.hist(bssort, bin68, facecolor=color,ec='black',histtype='stepfilled',weights=weights)
         n, bins, patches = ax.hist(bssort, setbins, histtype='step',ec='black',weights=weights)
-        ymax = 1.25*max(n)
         n, bins, patches = ax.hist(bssort, bin95, histtype='step',ec='black',weights=weights)
         n, bins, patches = ax.hist(bssort, bin68, histtype='step',ec='black',weights=weights)
         if type(bootn_dict) == dict:
-            for k in bootn_dict.keys():
+            color_list = ['#ec5d57','#f39019','#f5d328','#70bf41','#51a7f9','#11dbe3','#d45954','#e8a433','#7bdb45']
+            sort_AIC = np.array([[w_dict[k],k] for k in w_dict.keys()])
+            sort_idx = np.argsort(sort_AIC,axis=0)[:,0]
+            sort_AIC = sort_AIC[:,1][sort_idx]
+            for i,k in enumerate(sort_AIC):
                 sortn = np.sort(bootn_dict[k])
                 setbins = int((sortn[-1]-sortn[0])/binsize)
-                ax.hist(bootn_dict[k], setbins, histtype='step',weights=np.ones_like(bootn_dict[k])*w_dict[k])
+                ax.hist(bootn_dict[k], setbins, histtype='stepfilled',alpha=0.3,facecolor=color_list[i],weights=np.ones_like(bootn_dict[k])*w_dict[k],ec='black')
         x = np.delete(bins, -1)
         if param==None:
-            ax.set_xlabel('$g_{A}$', fontsize=24)
+            ax.set_xlabel('$g_{A}$', fontsize=20)
         else:
-            ax.set_xlabel('%s' %param, fontsize=24)
-        ax.axis([1.15,1.45,0,ymax])
+            ax.set_xlabel('%s' %param, fontsize=20)
         ax.xaxis.set_tick_params(labelsize=16)
         ax.yaxis.set_tick_params(labelsize=0)
-        ax.set_title(title,x=0.95,y=0.9,fontsize=24,bbox=dict(facecolor=color,alpha=0.5),\
-            horizontalalignment='right',verticalalignment='top')
+        ax.set_title(title,x=0.15,y=0.68/0.8,fontsize=20,bbox=dict(facecolor=color))
         frame = plt.gca()
         frame.axes.get_yaxis().set_visible(False)
         plt.draw()
