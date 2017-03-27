@@ -53,10 +53,13 @@ def gA_parameters():
 def plotting_parameters():
     p = dict()
     # Figure sizes and fonts
-    p['fig_gldn'] = (8.125,5.018)
-    p['ga_axes'] = [0.095,0.128,0.895,0.865]
-    p['mL_axes'] = [0.095,0.125,0.895,0.865]
-    p['fs'] = 24
+    #p['fig_gldn'] = (8.125,5.018)
+    p['fig_gldn'] = (7,4.326237)
+    #p['ga_axes'] = [0.095,0.128,0.895,0.865]
+    #p['mL_axes'] = [0.095,0.125,0.895,0.865]
+    p['ga_axes'] = [0.15,0.15,0.8,0.8]
+    p['mL_axes'] = [0.15,0.15,0.8,0.8]
+    p['fs'] = 20
 
     # set up ensemble parameters for plotting
     # colors
