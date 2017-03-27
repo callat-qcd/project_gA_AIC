@@ -8,9 +8,10 @@ import matplotlib.pyplot as plt
 
 def fit_list():
     # select nbs bootstraps from sqlite
-    nbs = 1000
+    nbs = 5000
     # select model set here
     model_set = ['c0_nofv','t_esq0_a0','t_esq1_a0','t_esq0_a2','t_esq1_a2','x_nlo_a0','x_nlo_a2']
+    #model_set = ['t_esq1_a0','t_esq0_a2','t_esq1_a2','x_nlo_a0','x_nlo_a2']
     title = dict()
     title['c0_nofv']      = r'Constant'
     title['t_esq0_a0']    = r'Taylor $C_0$ + FV'
@@ -32,8 +33,6 @@ plt.ion()
 
 def read_sql(tblname,fitname,nbs):
     conn = sqlite3.connect('c51_ga.sqlite')
-    #conn.enable_load_extension(True)
-    #conn.load_extension("./json1")
     c = conn.cursor()
     c.execute("SELECT nbs, result FROM %s WHERE name='%s' AND nbs<=%s;" %(tblname,fitname,nbs))
     mle = c.fetchall()
@@ -61,7 +60,7 @@ def CI68(bins, CI):
             pass
     return bin68
 
-def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None, mk_hist=True):
+def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None, mk_hist=True, bootn_dict=False, w_dict=False):
     # get confidence interval index
     if type(weights) == np.ndarray:
         norm = sum(weights)
@@ -116,6 +115,11 @@ def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None, mk_
         n, bins, patches = ax.hist(bssort, setbins, histtype='step',ec='black',weights=weights)
         n, bins, patches = ax.hist(bssort, bin95, histtype='step',ec='black',weights=weights)
         n, bins, patches = ax.hist(bssort, bin68, histtype='step',ec='black',weights=weights)
+        if type(bootn_dict) == dict:
+            for k in bootn_dict.keys():
+                sortn = np.sort(bootn_dict[k])
+                setbins = int((sortn[-1]-sortn[0])/binsize)
+                ax.hist(bootn_dict[k], setbins, histtype='step',weights=np.ones_like(bootn_dict[k])*w_dict[k])
         x = np.delete(bins, -1)
         if param==None:
             ax.set_xlabel('$g_{A}$', fontsize=20)
@@ -124,8 +128,6 @@ def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None, mk_
         ax.xaxis.set_tick_params(labelsize=16)
         ax.yaxis.set_tick_params(labelsize=0)
         ax.set_title(title,x=0.15,y=0.68/0.8,fontsize=20,bbox=dict(facecolor=color))
-        #plt.suptitle('%s' %ens,x=0.2,y=0.9,fontsize=20)
-        #plt.tight_layout()
         frame = plt.gca()
         frame.axes.get_yaxis().set_visible(False)
         plt.draw()
@@ -147,7 +149,7 @@ def akaike_weights(data0):
     w = dict()
     for k in data0.keys():
         w[k] = np.exp(-0.5*(data0[k]['AIC']-AICm))/num
-        print('    %s;\taic %.3f:\twieght %.4f' %(k,data0[k]['AIC'],w[k]))
+        print('    %s;\taic %.3f:\tweight %.4f' %(k,data0[k]['AIC'],w[k]))
     return w
 
 def model_avg(boot0,bootn,weights):
@@ -195,7 +197,7 @@ def AICavg(model_set,mle,boot0,bootn):
     whist = np.array(whist).flatten()
     cbootn = np.array(cbootn).flatten()
     idx = np.argsort(cbootn) # sort
-    make_histogram(cbootn[idx],title='Akaike average',tag='AIC',weights=whist[idx])
+    make_histogram(cbootn[idx],title='Akaike average',tag='AIC',weights=whist[idx],bootn_dict=bootn,w_dict=w)
 
 if __name__=='__main__':
     model_set, title, nbs = fit_list()
