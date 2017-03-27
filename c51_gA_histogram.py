@@ -129,14 +129,8 @@ def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None, mk_
         ax.axis([1.15,1.45,0,ymax])
         ax.xaxis.set_tick_params(labelsize=16)
         ax.yaxis.set_tick_params(labelsize=0)
-<<<<<<< HEAD
-        ax.set_title(title,x=0.15,y=0.68/0.8,fontsize=20,bbox=dict(facecolor=color))
-=======
         ax.set_title(title,x=0.95,y=0.9,fontsize=24,bbox=dict(facecolor=color,alpha=0.5),\
             horizontalalignment='right',verticalalignment='top')
-        #plt.suptitle('%s' %ens,x=0.2,y=0.9,fontsize=20)
-        #plt.tight_layout()
->>>>>>> fd11cac6efe62eeabcb71ad1f78ebb3e5c7b2213
         frame = plt.gca()
         frame.axes.get_yaxis().set_visible(False)
         plt.draw()
