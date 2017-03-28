@@ -114,6 +114,7 @@ def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None, mk_
         bin68 = CI68(bins, CI)
         n, bins, patches = ax.hist(bssort, bin68, facecolor=color,ec='black',alpha=1.0,histtype='stepfilled',weights=weights)
         n, bins, patches = ax.hist(bssort, setbins, histtype='step',ec='black',weights=weights)
+        ymax = 1.25*max(n)
         n, bins, patches = ax.hist(bssort, bin95, histtype='step',ec='black',weights=weights)
         n, bins, patches = ax.hist(bssort, bin68, histtype='step',ec='black',weights=weights)
         if type(bootn_dict) == dict:
@@ -124,20 +125,23 @@ def make_histogram(bssort, title, tag, weights=None, param=None, boot0=None, mk_
             for i,k in enumerate(sort_AIC):
                 sortn = np.sort(bootn_dict[k])
                 setbinsn = int((sortn[-1]-sortn[0])/binsize)
-                ax.hist(bootn_dict[k], setbinsn, histtype='step',weights=np.ones_like(bootn_dict[k])*w_dict[k],ec='black',alpha=0.5)
+                ax.hist(bootn_dict[k], setbinsn, histtype='step',\
+                    weights=np.ones_like(bootn_dict[k])*w_dict[k],ec='black',alpha=0.5)
         x = np.delete(bins, -1)
         if param==None:
             ax.set_xlabel('$g_{A}$', fontsize=20)
         else:
             ax.set_xlabel('%s' %param, fontsize=20)
+        #ax.set_ylim(0,ymax)
         ax.xaxis.set_tick_params(labelsize=16)
         ax.yaxis.set_tick_params(labelsize=0)
-        ax.set_title(title,fontdict={'fontsize':20,'verticalalignment':'top','horizontalalignment':'right'},x=0.95,y=0.9,bbox=dict(facecolor=color))
+        ax.set_title(title,x=0.95,y=0.9,bbox=dict(facecolor=color),\
+            fontdict={'fontsize':20,'verticalalignment':'top','horizontalalignment':'right'})
         frame = plt.gca()
         frame.axes.get_yaxis().set_visible(False)
         plt.draw()
         plt.show()
-        fig.savefig('/Users/cchang5/Documents/Papers/c51_p2/papers/ga_long/gA_%s.pdf' %tag, format='pdf', transparent=True)
+        fig.savefig('gA_%s.pdf' %tag, format='pdf', transparent=True)
         return 0
     else:
         return np.mean(bssort),np.std(bssort)
