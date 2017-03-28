@@ -219,7 +219,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ax.legend(handles=leg2,loc=2,numpoints=1,ncol=1,shadow=False,fancybox=True)
         ax.tick_params(axis='both', which='major', labelsize=16)
         ax.set_title(plt.get_figlabels()[-1],fontdict={'fontsize':20,'verticalalignment':'top','horizontalalignment':'right'},x=0.95,y=0.9)
-        plt.savefig('/Users/cchang5/Documents/Papers/c51_p2/papers/ga_long/%s.pdf' %(plt.get_figlabels()[-1].replace(' ','_').replace('(','').replace(')','').replace('$','').replace('\\','').replace('.','').replace('^','').replace('/','')), transparent=True)
+        plt.savefig('%s.pdf' %(plt.get_figlabels()[-1].replace(' ','_').replace('(','').replace(')','').replace('$','').replace('\\','').replace('.','').replace('^','').replace('/','')), transparent=True)
         return 0
     def fv_plot(args,params_chipt,params_plot,result,data,ax,select):
         e0 = result['xdict']['epi0']
@@ -272,7 +272,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ax.legend(loc=3,shadow=False,fancybox=True,fontsize=params_plot['fs'])
         ax.tick_params(axis='both', which='major', labelsize=16)
         ax.set_title(plt.get_figlabels()[-1],fontdict={'fontsize':20,'verticalalignment':'top','horizontalalignment':'left'},x=0.05,y=0.9)
-        plt.savefig('/Users/cchang5/Documents/Papers/c51_p2/papers/ga_long/%s.pdf' %(plt.get_figlabels()[-1].replace(' ','_').replace('(','').replace(')','').replace('$','').replace('\\','').replace('.','').replace('^','').replace('/','')), transparent=True)
+        plt.savefig('%s.pdf' %(plt.get_figlabels()[-1].replace(' ','_').replace('(','').replace(')','').replace('$','').replace('\\','').replace('.','').replace('^','').replace('/','')), transparent=True)
         
     ############################
     # END                      #
