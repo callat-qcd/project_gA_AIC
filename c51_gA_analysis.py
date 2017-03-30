@@ -92,9 +92,9 @@ def parse_input():
 def ini_vals(select):
     # initial values for minimizer
     # TAYLOR FITS
-    if select in ['t_esq1_a2','t_esq1_aSa2']:
+    if select in ['t_esq1_a2','t_esq1_aSa2','t_esq1_aSa2p']:
         return {'c0':1.25,'error_c0':0.05,'cm1':-1,'error_cm1':0.05,\
-                'ca2':-0.1,'error_ca2':0.02,'g0fv':1.5,'error_g0fv':0.1}
+                'ca2':-0.1,'error_ca2':0.02,'g0fv':1.5,'error_g0fv':0.01}
     elif select in ['c0_nofv']:
         return {'c0':1.25,'error_c0':0.05}
     elif select in ['t_esq0_a0']:
@@ -117,7 +117,7 @@ def ini_vals(select):
     elif select in ['x_nlo_a2_ea2']:
         return {'g0':1.25,'error_g0':0.05,'c2':-1,'error_c2':0.05,\
                 'ca2':-0.1,'error_ca2':0.02,'cam2':.1,'error_cam2':.01}
-    elif select in ['xma_nlo_a2']:
+    elif select in ['xma_nlo_a2','xma_nlo_aSa2']:
         return {'g0':1.25,'error_g0':0.05,'c2':-5,'error_c2':0.05,\
                 'g0b':0.5,'error_g0b':0.05,'ca2':-0.1,'error_ca2':0.02}
     else:

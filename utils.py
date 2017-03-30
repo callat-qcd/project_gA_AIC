@@ -43,8 +43,10 @@ def read_data(fname,args,p):
         mL_b0[i]      = float(c51_data.get_node('/mpiL/'+ens+'/b0').read())
         aw0_bs[:,i]   = c51_data.get_node('/aw0/'+ens+'/bs').read()[0:Nbs]
         aw0_b0[i]     = float(c51_data.get_node('/aw0/'+ens+'/b0').read())
-        aSaw0_bs[:,i] = aw0_bs[:,i] * p['afs'][ens]
-        aSaw0_b0[i]   = aw0_b0[i] * p['afs'][ens]
+        # we have to multiply a by sqrt(alpha_S) as a is squared in the extrapolation functions
+        # to swap sqrt(alpha_S) a in for a 
+        aSaw0_bs[:,i] = aw0_bs[:,i] * np.sqrt(p['afs'][ens])
+        aSaw0_b0[i]   = aw0_b0[i] * np.sqrt(p['afs'][ens])
         eju_bs[:,i]   = c51_data.get_node('/eju/'+ens+'/bs').read()[0:Nbs]
         eju_b0[i]     = float(c51_data.get_node('/eju/'+ens+'/b0').read())
         epqsq_bs[:,i] = c51_data.get_node('/epqsq/'+ens+'/bs').read()[0:Nbs]
