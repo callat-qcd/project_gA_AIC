@@ -46,7 +46,7 @@ def parse_input():
     parser.add_argument('-f','--fits',default='all',action='store',\
         help='''what type of extrapolation to perform? [%(default)s]
         all    [ c0_nofv, t_esq0_a0, t_esq0_a2, t_esq1_a0, t_esq1_a2, x_nlo_a2 ]
-        other  [ x_nlo_a2_ea2, t_esq1_a2, xma_nlo_a2, x_nlo_aSa2 ]
+        other  [ x_nlo_a2_ea2, xma_nlo_a2, t_esq1_aSa2, x_nlo_aSa2 ]
         future [ t_e1_a2, t_e2_a2, t_esq2_a2, x_nnlo_a2 ]
         ''')
     parser.add_argument('--file',type=str,default='c51_gA_mdwf.h5',action='store',
@@ -92,14 +92,14 @@ def parse_input():
 def ini_vals(select):
     # initial values for minimizer
     # TAYLOR FITS
-    if select in ['t_esq1_a2','t_esq_1_aSa2']:
+    if select in ['t_esq1_a2','t_esq1_aSa2']:
         return {'c0':1.25,'error_c0':0.05,'cm1':-1,'error_cm1':0.05,\
                 'ca2':-0.1,'error_ca2':0.02,'g0fv':1.5,'error_g0fv':0.1}
     elif select in ['c0_nofv']:
         return {'c0':1.25,'error_c0':0.05}
     elif select in ['t_esq0_a0']:
         return {'c0':1.25,'error_c0':0.05,'g0fv':1.5,'error_g0fv':0.1}
-    elif select in ['t_esq0_a2']:
+    elif select in ['t_esq0_a2','t_esq0_aSa2']:
         return {'c0':1.25,'error_c0':0.05,\
                 'ca2':-0.1,'error_ca2':0.02,'g0fv':1.5,'error_g0fv':0.1}
     elif select in ['t_esq1_a0']:

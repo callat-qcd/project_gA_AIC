@@ -240,13 +240,12 @@ class ChiSq():
         self.do_bs = do_bs
         self.bs = bs
     def select_chisq(self,select):
+        self.select = select
         if select in ['t_esq1_a2']:
             return self.t_esq1_a2
-        elif select in ['c0_nofv']:
-            return self.c0_nofv
         elif select in ['t_esq0_a0']:
             return self.t_esq0_a0
-        elif select in ['t_esq0_a2']:
+        elif select in ['t_esq0_a2','t_esq0_aSa2']:
             return self.t_esq0_a2
         elif select in ['t_esq1_a0']:
             return self.t_esq1_a0
@@ -256,6 +255,10 @@ class ChiSq():
             return self.x_nlo_a0
         elif select in ['x_nlo_aSa2']:
             return self.x_nlo_aSa2
+        elif select in ['t_esq1_aSa2']:
+            return self.t_esq1_aSa2
+        elif select in ['c0_nofv']:
+            return self.c0_nofv
         elif select in ['xma_nlo_a2']:
             return self.xma_nlo_a2
         elif select in ['x_nlo_a2_ea2']:
@@ -297,6 +300,33 @@ class ChiSq():
         y,f,cov are all len(l_d) arrays
         numpy will properly do the multiplication/division
         '''
+        chisq += np.sum( (y-f)**2 / cov )
+        if self.args.g0fv != None:
+            chisq += (g0fv - self.args.g0fv[0])**2 / self.args.g0fv[1]**2
+        return chisq
+    def t_esq1_aSa2(self,c0,cm1,ca2,g0fv):
+        ''' taylor esq function defined as function of epi**2 '''
+        self.x0 = self.args.e0**2
+        self.xphys = self.p['epi_phys']**2
+        self.xdict = {'epi0':self.x0, 'epi':self.xphys}
+        chisq = 0.
+        if self.do_bs:
+            y     = self.ga_bs[self.bs]
+            x     = (self.epi_bs**2)[self.bs]
+            xa    = self.aSaw0_bs[self.bs]
+        else:
+            y     = self.ga_b0
+            x     = self.epi_b0**2
+            xa    = self.aSaw0_b0
+        cdict = {'c0':c0, 'ca2':ca2, 'cm1':cm1} 
+        f     = ga_epi(epi0=self.x0,epi=x,a=xa,**cdict)
+        f    += self.FV_class.dgaFV(g0fv)
+        if self.args.error_x:
+            fbs  = ga_epi(self.x0,(self.epi_bs**2),a=self.aw0_bs,**cdict)
+            fbs += self.FV_class_bs.dgaFV(g0fv)
+            cov  = np.var( self.ga_bs - fbs,axis=0)
+        else:
+            cov = self.ga_bs.var(axis=0)
         chisq += np.sum( (y-f)**2 / cov )
         if self.args.g0fv != None:
             chisq += (g0fv - self.args.g0fv[0])**2 / self.args.g0fv[1]**2
@@ -411,6 +441,10 @@ class ChiSq():
             y     = self.ga_b0
             x     = self.epi_b0**2
             xa    = self.aw0_b0
+        if self.select == 't_esq0_aSa2':
+            for ens in self.p['ens_idx']:
+                i = self.p['ens_idx'][ens]
+                xa[i] = np.sqrt(self.p['afs'][ens]) * xa[i]
         cdict = {'c0':c0, 'ca2':ca2}
         f     = ga_epi(epi0=self.x0,epi=x,a=xa,**cdict)
         f    += self.FV_class.dgaFV(g0fv)
@@ -569,7 +603,8 @@ def fit_gA(args,p,data,ini_vals):
         cov = np.array(ga_min.matrix(correlation=False,skip_fixed=True))
         params = CS.xdict.copy()
         params.update(ga_min.values)
-        if select in ['t_esq0_a0','t_esq1_a2','t_esq0_a2','t_esq1_a0','t_esq1_a2_ea2']:
+        if select in ['t_esq0_a0','t_esq1_a2','t_esq0_a2','t_esq1_a0','t_esq1_a2_ea2',\
+            't_esq0_aSa2','t_esq1_aSa2']:
             cov2 = cov[:-1,:-1]
             x0 = CS.x0
             ga_fit = ga_epi(a=0,**params)
@@ -689,6 +724,39 @@ def fit_gA(args,p,data,ini_vals):
         select = 'x_nlo_a2'
         print('==================================================')
         print('gA = NLO SU(2) + FV + a**2, g0fv == g0\n')
+        # do the minimization
+        ga_min = minimize(CS.select_chisq(select),ini_vals(select))
+        # print outputs
+        rdict[select] = print_output(CS,ga_min,select)
+        if args.bs:
+            bs_to_db(p,ga_min,select)
+    if args.fits in ['all','x_nlo_aSa2']:
+        CS = ChiSq(args,p,data)
+        select = 'x_nlo_aSa2'
+        print('==================================================')
+        print('gA = NLO SU(2) + FV + alphaS * a**2, g0fv == g0\n')
+        # do the minimization
+        ga_min = minimize(CS.select_chisq(select),ini_vals(select))
+        # print outputs
+        rdict[select] = print_output(CS,ga_min,select)
+        if args.bs:
+            bs_to_db(p,ga_min,select)
+    if args.fits in ['all','t_esq1_aSa2']:
+        CS = ChiSq(args,p,data)
+        select = 't_esq1_aSa2'
+        print('==================================================')
+        print('gA = c0 + c1*(epi**2-e0**2) + ca2 * alpha_S (a/w0)**2 + FV\n')
+        # do the minimization
+        ga_min = minimize(CS.select_chisq(select),ini_vals(select))
+        # print outputs
+        rdict[select] = print_output(CS,ga_min,select)
+        if args.bs:
+            bs_to_db(p,ga_min,select)
+    if args.fits in ['all','t_esq0_aSa2']:
+        CS = ChiSq(args,p,data)
+        select = 't_esq0_aSa2'
+        print('==================================================')
+        print('gA = c0 + ca2 * alpha_S (a/w0)**2 + FV\n')
         # do the minimization
         ga_min = minimize(CS.select_chisq(select),ini_vals(select))
         # print outputs
