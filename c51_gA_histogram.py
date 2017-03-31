@@ -27,6 +27,8 @@ def fit_list():
     title['x_lo_a2']     = r'SU(2) LO $\chi$PT $+a^2$'
     title['x_lo_aSa2']     = r'SU(2) LO $\chi$PT $+\alpha_S a^2$'
     title['x_nlo_a2']     = r'SU(2) NLO $\chi$PT $+a^2$'
+    title['t_esq0_aSa2']    = r'Taylor $C_0+\alpha_S a^2$'
+    title['t_esq1_aSa2']    = r'Taylor $C_0+C_1\epsilon_\pi^2+\alpha_S a^2$'
     title['x_nlo_aSa2']     = r'SU(2) NLO $\chi$PT $+\alpha_S a^2$'
     return model_set, title, nbs
     
