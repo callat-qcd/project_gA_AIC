@@ -51,7 +51,9 @@ def read_data(fname,args,p):
         eju_b0[i]     = float(c51_data.get_node('/eju/'+ens+'/b0').read())
         epqsq_bs[:,i] = c51_data.get_node('/epqsq/'+ens+'/bs').read()[0:Nbs]
         epqsq_b0[i]   = float(c51_data.get_node('/epqsq/'+ens+'/b0').read())
-        print(ens,ga_b0[i],ga_bs.std(axis=0)[i],epi_b0[i],epi_bs.std(axis=0)[i])
+        print('%s gA = %.4f +- %.4f, epi = %.5f +- %.5f, mpiL = %.4f +- %.4f' \
+            %(ens,ga_b0[i],ga_bs.std(axis=0)[i],epi_b0[i],epi_bs.std(axis=0)[i],
+            mL_b0[i],mL_bs.std(axis=0)[i]))
     data['ga_bs']    = ga_bs
     data['ga_b0']    = ga_b0
     data['epi_bs']   = epi_bs
@@ -89,7 +91,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
             ga_plot = gafit.ga_epi(epi0=e0,epi=epi,a=a,**result['ga_min'].values)
             cov2 = cov[0:-1,0:-1]
             dga_plot = gafit.dga_epi(epi0=e0,epi=epi,a=a,lam_cov=cov2,**result['ga_min'].values)
-        elif select in ['x_nlo_a0','x_nlo_a2','x_nlo_aSa2','x_nlo_a2_ea2']:
+        elif select in ['x_lo_aSa2','x_lo_a2','x_nlo_a0','x_nlo_a2','x_nlo_aSa2','x_nlo_a2_ea2']:
             ga_plot = gafit.ga_su2(epi=epi,a=a,**result['ga_min'].values)
             dga_plot = gafit.dga_su2(epi=epi,a=a,lam_cov=cov,**result['ga_min'].values)
         elif select in ['xma_nlo_a2']:
@@ -136,7 +138,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
                 ga_0 = gafit.ga_epi(epi0=e0,epi=epi,a=a0,**result['ga_min'].values)
                 ga_1 = gafit.ga_epi(epi0=e0,epi=epi,a=a1,**result['ga_min'].values)
                 ga_2 = gafit.ga_epi(epi0=e0,epi=epi,a=a2,**result['ga_min'].values)
-        elif select in ['x_nlo_a2','x_nlo_aSa2','x_nlo_a2_ea2']:
+        elif select in ['x_lo_a2','x_nlo_a2','x_nlo_aSa2','x_nlo_a2_ea2']:
             if type(epi) != np.ndarray and type(a) == np.ndarray:
                 ga_0 = gafit.ga_su2(epi=e[0],a=a,**result['ga_min'].values)
                 ga_1 = gafit.ga_su2(epi=e[1],a=a,**result['ga_min'].values)
@@ -258,7 +260,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         for i,mLi in enumerate(mLplot):
             if select in ['t_esq1_a2','t_esq0_a2','t_esq1_a2_ea2','t_esq1_a0']:
                 dga_L[i] = gafit.dga_epi_fv(e0,epi,epifv,a,mLi,cov,**result['ga_min'].values)
-            elif select in ['x_nlo_a0','x_nlo_a2','x_nlo_a2','x_nlo_aSa2','x_nlo_a2_ea2']:
+            elif select in ['x_lo_a2','x_lo_aSa2','x_nlo_a0','x_nlo_a2','x_nlo_a2','x_nlo_aSa2','x_nlo_a2_ea2']:
                 dga_L[i] = gafit.dfv_su2_nlo(epi,mLi,a,lam_cov=cov,**result['ga_min'].values)
         gn = params_plot['e_clr']['a12m220']
         mkr = params_plot['e_mrkr']['a12m220']
@@ -443,6 +445,62 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         #print('gA vs L:   Taylor0 e_pi^2')
         # initialize figure
         plt.figure('gA vs L Taylor0 epsq',figsize=params_plot['fig_gldn'])
+        ga_L_ax = plt.axes(params_plot['mL_axes'])
+        result['xdict']['epi0'] = args.e0**2
+        result['xdict']['mL'] = np.arange(3,100.1,.1)
+        fv_plot(args,params_chipt,params_plot,result,data,ga_L_ax,select)
+    if args.fits in ['all','x_lo_a2'] and args.plot:
+        # select results
+        select = 'x_lo_a2'
+        result = rdict[select].copy()
+        print('plotting %s' %select)
+        ############################################
+        # gA vs e_pi plot
+        ############################################
+        #print('gA vs epi: SU(2) NLO')
+        # initialize figure
+        plt.figure('$g_A$ vs. $\epsilon_\pi$ LO',figsize=params_plot['fig_gldn'])
+        ga_mpi_ax = plt.axes(params_plot['ga_axes'])
+        leg1 = []
+        leg2 = []
+        # define x dependence
+        result['xdict']['epi_plot'] = np.arange(0.001,0.41,.001)
+        result['xdict']['xplot'] = np.arange(0.001,0.41,.001)
+        result['xdict']['a'] = 0
+        # continuum limit plot
+        leg2 = continuum_plot(args,params_plot,result,ga_mpi_ax,leg2,select)
+        # finite a plots
+        leg1 = discrete_plot(args,params_plot,data,result,ga_mpi_ax,leg1,select)
+        # add data points
+        leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_mpi_ax,leg1)
+        # finish plot
+        finish_plot(args,params_chipt,params_plot,result,ga_mpi_ax,leg1,leg2)
+        ############################################
+        # gA vs asq plot
+        ############################################
+        #print('gA vs asq: SU(2) NLO')
+        # initialize figure
+        plt.figure('$g_A$ vs. $(a/w_0)^2$ LO',figsize=params_plot['fig_gldn'])
+        ga_a_ax = plt.axes(params_plot['ga_axes'])
+        leg1 = []
+        leg2 = []
+        result['xdict']['epi_plot'] = params_chipt['epi_phys']
+        result['xdict']['xplot'] = np.arange(0,1.01,.01)**2
+        result['xdict']['a'] = np.arange(0,1.01,.01)
+        # continuum limit plot
+        leg2 = continuum_plot(args,params_plot,result,ga_a_ax,leg2,select)
+        # finite a plots
+        leg1 = discrete_plot(args,params_plot,data,result,ga_a_ax,leg1,select)
+        # add data points
+        leg1 = data_plot(args,params_chipt,params_plot,data,result,ga_a_ax,leg1)
+        # finish plot
+        finish_plot(args,params_chipt,params_plot,result,ga_a_ax,leg1,leg2)
+        ############################################
+        # gA vs L plot
+        ############################################
+        #print('gA vs L:   SU(2) NLO')
+        # initialize figure
+        plt.figure('$g_A$ vs. $m_\pi L$ LO',figsize=params_plot['fig_gldn'])
         ga_L_ax = plt.axes(params_plot['mL_axes'])
         result['xdict']['epi0'] = args.e0**2
         result['xdict']['mL'] = np.arange(3,100.1,.1)

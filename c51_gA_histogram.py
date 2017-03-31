@@ -11,18 +11,21 @@ def fit_list():
     nbs = 5000
     # select model set here
     #model_set = ['c0_nofv','t_esq0_a0','t_esq1_a0','t_esq0_a2','t_esq1_a2','x_nlo_a0','x_nlo_a2']
-    model_set = ['t_esq1_a0','t_esq0_a2','t_esq1_a2','x_nlo_a0','x_nlo_a2','t_esq0_aSa2','t_esq1_aSa2','x_nlo_aSa2']
+    model_set = ['t_esq1_a0','t_esq0_a2','t_esq1_a2','t_esq0_aSa2','t_esq1_aSa2',\
+        'x_nlo_a0','x_lo_a2','x_lo_aSa2','x_nlo_a2','x_nlo_aSa2']
     #model_set = ['t_esq0_a2','t_esq1_a2','x_nlo_a2']
     #model_set = ['t_esq1_a2','x_nlo_a2']
     title = dict()
     title['c0_nofv']      = r'Constant'
     title['t_esq0_a0']    = r'Taylor $C_0$ + FV'
-    title['t_esq1_a2']    = r'Taylor $C_0+C_1\epsilon_\pi^2+a^2$'
-    title['t_esq1_aSa2']    = r'Taylor $C_0+C_1\epsilon_\pi^2+\alpha_S a^2$'
-    title['t_esq1_a0']    = r'Taylor $C_0+C_1\epsilon_\pi^2$'
+    title['t_esq1_a2']    = r'Taylor $C_0+C_2\epsilon_\pi^2+a^2$'
+    title['t_esq1_aSa2']    = r'Taylor $C_0+C_2\epsilon_\pi^2+\alpha_S a^2$'
+    title['t_esq1_a0']    = r'Taylor $C_0+C_2\epsilon_\pi^2$'
     title['t_esq0_a2']    = r'Taylor $C_0+a^2$'
     title['t_esq0_aSa2']  = r'Taylor $C_0+\alpha_S a^2$'
     title['x_nlo_a0']     = r'SU(2) NLO $\chi$PT w/o $a^2$'
+    title['x_lo_a2']     = r'SU(2) LO $\chi$PT $+a^2$'
+    title['x_lo_aSa2']     = r'SU(2) LO $\chi$PT $+\alpha_S a^2$'
     title['x_nlo_a2']     = r'SU(2) NLO $\chi$PT $+a^2$'
     title['x_nlo_aSa2']     = r'SU(2) NLO $\chi$PT $+\alpha_S a^2$'
     return model_set, title, nbs
@@ -50,7 +53,7 @@ def make_ga(mle,fitname):
     p = dps.gA_parameters()
     if fitname in ['c0_nofv','t_esq0_a0','t_esq1_a2','t_esq1_aSa2','t_esq1_a0','t_esq0_a2','t_esq0_aSa2']:
         gA = np.array([ff.ga_epi(epi0=mle[0]['e0']**2,epi=p['epi_phys']**2,a=0,**mle[i]) for i in range(len(mle))])
-    elif fitname in ['x_nlo_a0','x_nlo_a2','x_nlo_aSa2']:
+    elif fitname in ['x_nlo_a0','x_lo_a2','x_lo_aSa2','x_nlo_a2','x_nlo_aSa2']:
         gA = np.array([ff.ga_su2(epi=p['epi_phys'],a=0,**mle[i]) for i in range(len(mle))])
     boot0 = gA[0]
     bootn = np.sort(gA[1:])
