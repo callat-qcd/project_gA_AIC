@@ -36,7 +36,7 @@ def parse_input():
     Required Python Libraries/Software
       numpy v1.10.2+
       scipy
-      matplotlib
+      matplotlib [uselatex: True in matplotrc file]
       tables (hdf5)
       iminuit
       sqlite3''',formatter_class=argparse.RawTextHelpFormatter)
