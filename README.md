@@ -1,6 +1,6 @@
 # gA chiral-continuum extrapolation scripts
 
-This repository contains Python scripts that are released with the publication of "Towards a precise calculation of the nucleon axial charge with lattice QCD" <link to arxiv page>.
+This repository contains Python scripts that are released with the publication of [Towards a precise calculation of the nucleon axial charge with lattice QCD][arxiv].
 
 We release the scripts used to perform the chiral-continuum extrapolation along with bootstrapped correlator results necessary for the extrapolation in `hdf5` format.
 
@@ -12,10 +12,16 @@ We release the scripts used to perform the chiral-continuum extrapolation along 
 - `sqlite_store.py` contains the script which creates and writes to the `c51_ga.sqlite` database.
 - `c51_gA_histogram.py` generates histograms from bootstrapped extrapolation results. Options for this scripts are accessible under the function `fit_list()` inside the file. The user may choose the set of models considered in the AIC weighted average. The script will plot histograms of the individual extrapolations, as well as the AIC averaged histogram.
 
+# Dependencies
+
+We rely on the `numpy`, `scipy`, `matplotlib`, `iminuit`, `sqlite3`, `tqdm`, and `tables` Python modules.  They may be installed via the Python package utility `pip` via
+
 ```
-Here's a rabbit
- ()()
-(_ _)
-(u u)o
-Cheers!
+pip install numpy scipy matplotlib iminuit tqdm tables
 ```
+
+The `tables` module relies on [HDF5][hdf5], which is commonly installed in many supercomputing environments and can easily be installed on local machines.
+
+
+[arxiv]:    http://www.arxiv.org/link/to/paper
+[hdf5]:     https://www.hdfgroup.org/hdf5/
