@@ -55,7 +55,7 @@ def parse_input():
         help='add e_pi offset (e0) for Taylor expansion fits [%(default)s]')
     parser.add_argument('--bs',default=False,action='store_true',\
         help='loop over bootstraps? [%(default)s]')
-    parser.add_argument('--error_x',default=True,action='store_false',\
+    parser.add_argument('--error_x',default=False,action='store_true',\
         help='include error in all "x" parameters in analysis? [%(default)s]')
     parser.add_argument('--error_epi',default=True,action='store_false',\
         help='include error in "epi" parameters in analysis? [%(default)s]')

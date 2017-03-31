@@ -325,7 +325,7 @@ class ChiSq():
         # ELSE
         #   construct simple covariance from only gA_bs
         if self.args.error_x:
-            fbs  = ga_epi(self.x0,(self.epi_bs**2),a=xabs,**cdict)
+            fbs  = ga_epi(self.x0,(self.epi_bs**2),a=self.xabs,**cdict)
             fbs += self.FV_class_bs.dgaFV(g0fv)
             cov  = np.var( self.ga_bs - fbs,axis=0)
         else:
