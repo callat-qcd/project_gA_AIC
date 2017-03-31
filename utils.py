@@ -220,7 +220,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         plt.gca().add_artist(d_leg)
         ax.legend(handles=leg2,loc=1,numpoints=1,ncol=1,shadow=False,fancybox=True)
         ax.tick_params(axis='both', which='major', labelsize=16)
-        ax.set_title(plt.get_figlabels()[-1],fontdict={'fontsize':20,'verticalalignment':'top','horizontalalignment':'left'},x=0.05,y=0.9)
+        ax.set_title(plt.get_figlabels()[-1].split(' ')[-1],fontdict={'fontsize':20,'verticalalignment':'top','horizontalalignment':'left'},x=0.05,y=0.9)
         plt.savefig('%s.pdf' %(plt.get_figlabels()[-1].replace(' ','_').replace('(','').replace(')','').replace('$','').replace('\\','').replace('.','').replace('^','').replace('/','')), transparent=True)
         return 0
     def fv_plot(args,params_chipt,params_plot,result,data,ax,select):
@@ -273,7 +273,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ax.axis([0.,0.024,1.2025,1.3125])
         ax.legend(loc=3,shadow=False,fancybox=True,fontsize=params_plot['fs'])
         ax.tick_params(axis='both', which='major', labelsize=16)
-        ax.set_title(plt.get_figlabels()[-1],fontdict={'fontsize':20,'verticalalignment':'top','horizontalalignment':'left'},x=0.05,y=0.9)
+        ax.set_title(plt.get_figlabels()[-1].split(' ')[-1],fontdict={'fontsize':20,'verticalalignment':'top','horizontalalignment':'left'},x=0.05,y=0.9)
         plt.savefig('%s.pdf' %(plt.get_figlabels()[-1].replace(' ','_').replace('(','').replace(')','').replace('$','').replace('\\','').replace('.','').replace('^','').replace('/','')), transparent=True)
         
     ############################
@@ -289,7 +289,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         #print('gA vs epi: Taylor e_pi^2')
         # initialize figure
-        plt.figure('$g_A$ vs. $\epsilon_\pi$ Taylor $\epsilon_\pi^2$',figsize=params_plot['fig_gldn'])
+        plt.figure('$g_A$ vs. $\epsilon_\pi$ T$\epsilon_\pi^2a^2$',figsize=params_plot['fig_gldn'])
         ga_mpi_ax = plt.axes(params_plot['ga_axes'])
         leg1 = []
         leg2 = []
@@ -310,7 +310,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         #print('gA vs asq: Taylor e_pi^2')
         # initialize figure
-        plt.figure('$g_A$ vs. $(a/w_0)^2$ Taylor $\epsilon_\pi^2$',figsize=params_plot['fig_gldn'])
+        plt.figure('$g_A$ vs. $(a/w_0)^2$ T$\epsilon_\pi^2a^2$',figsize=params_plot['fig_gldn'])
         ga_a_ax = plt.axes(params_plot['ga_axes'])
         leg1 = []
         leg2 = []
@@ -330,7 +330,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         #print('gA vs L:   Taylor e_pi^2')
         # initialize figure
-        plt.figure('$g_A$ vs. $m_\pi L$ Taylor $\epsilon_\pi^2$',figsize=params_plot['fig_gldn'])
+        plt.figure('$g_A$ vs. $m_\pi L$ T$\epsilon_\pi^2a^2$',figsize=params_plot['fig_gldn'])
         ga_L_ax = plt.axes(params_plot['mL_axes'])
         result['xdict']['epi0'] = args.e0**2
         result['xdict']['mL'] = np.arange(3,100.1,.1)
@@ -345,7 +345,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         #print('gA vs epi: SU(2) NLO')
         # initialize figure
-        plt.figure('$g_A$ vs. $\epsilon_\pi$ NLO',figsize=params_plot['fig_gldn'])
+        plt.figure('$g_A$ vs. $\epsilon_\pi$ $\chi\epsilon_\pi^2a^2$',figsize=params_plot['fig_gldn'])
         ga_mpi_ax = plt.axes(params_plot['ga_axes'])
         leg1 = []
         leg2 = []
@@ -366,7 +366,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         #print('gA vs asq: SU(2) NLO')
         # initialize figure
-        plt.figure('$g_A$ vs. $(a/w_0)^2$ NLO',figsize=params_plot['fig_gldn'])
+        plt.figure('$g_A$ vs. $(a/w_0)^2$ $\chi\epsilon_\pi^2a^2$',figsize=params_plot['fig_gldn'])
         ga_a_ax = plt.axes(params_plot['ga_axes'])
         leg1 = []
         leg2 = []
@@ -386,7 +386,7 @@ def plot_fit(args,params_chipt,params_plot,data,rdict):
         ############################################
         #print('gA vs L:   SU(2) NLO')
         # initialize figure
-        plt.figure('$g_A$ vs. $m_\pi L$ NLO',figsize=params_plot['fig_gldn'])
+        plt.figure('$g_A$ vs. $m_\pi L$ $\chi\epsilon_\pi^2a^2$',figsize=params_plot['fig_gldn'])
         ga_L_ax = plt.axes(params_plot['mL_axes'])
         result['xdict']['epi0'] = args.e0**2
         result['xdict']['mL'] = np.arange(3,100.1,.1)
