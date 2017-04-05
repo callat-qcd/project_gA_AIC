@@ -6,11 +6,11 @@
 *.pdf
 
 # ignore sqlite db
-*.sqlite
+#*.sqlite
 
 # ignore hdf5 files
-*.hdf5
-*.h5
+#*.hdf5
+#*.h5
 
 # vim stuff
 *.swp
