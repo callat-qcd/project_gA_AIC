@@ -1,6 +1,6 @@
 # gA chiral-continuum extrapolation scripts
 
-This repository contains Python scripts that are released with the publication of [An accurate calculation of the nucleon axial charge with lattice QCD][https://arxiv.org/abs/1704.01114].
+This repository contains Python scripts that are released with the publication of [An accurate calculation of the nucleon axial charge with lattice QCD](https://arxiv.org/abs/1704.01114).
 
 We release the scripts used to perform the chiral-continuum extrapolation along with bootstrapped correlator results necessary for the extrapolation in `hdf5` format.
 
