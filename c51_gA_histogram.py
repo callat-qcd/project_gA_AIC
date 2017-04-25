@@ -16,20 +16,22 @@ def fit_list():
     #model_set = ['t_esq0_a2','t_esq1_a2','x_nlo_a2']
     #model_set = ['t_esq1_a2','x_nlo_a2']
     title = dict()
-    title['c0_nofv']      = r'Constant'
-    title['t_esq0_a0']    = r'Taylor $C_0$ + FV'
-    title['t_esq1_a2']    = r'Taylor $C_0+C_2\epsilon_\pi^2+a^2$'
-    title['t_esq1_aSa2']    = r'Taylor $C_0+C_2\epsilon_\pi^2+\alpha_S a^2$'
-    title['t_esq1_a0']    = r'Taylor $C_0+C_2\epsilon_\pi^2$'
-    title['t_esq0_a2']    = r'Taylor $C_0+a^2$'
-    title['t_esq0_aSa2']  = r'Taylor $C_0+\alpha_S a^2$'
-    title['x_nlo_a0']     = r'SU(2) NLO $\chi$PT w/o $a^2$'
-    title['x_lo_a2']     = r'SU(2) LO $\chi$PT $+a^2$'
-    title['x_lo_aSa2']     = r'SU(2) LO $\chi$PT $+\alpha_S a^2$'
-    title['x_nlo_a2']     = r'SU(2) NLO $\chi$PT $+a^2$'
-    title['t_esq0_aSa2']    = r'Taylor $C_0+\alpha_S a^2$'
-    title['t_esq1_aSa2']    = r'Taylor $C_0+C_1\epsilon_\pi^2+\alpha_S a^2$'
-    title['x_nlo_aSa2']     = r'SU(2) NLO $\chi$PT $+\alpha_S a^2$'
+    # No FV 
+    title['c0_nofv']      = r'constant'
+    title['t_esq0_a0']    = r'T$\epsilon_\pi^0a^0$'
+
+    # Included in the paper:
+    title['t_esq0_a2']    = r'T$\epsilon_\pi^0a^2$'
+    title['t_esq0_aSa2']  = r'T$\epsilon_\pi^0\alpha_Sa^2$'
+    title['t_esq1_a0']    = r'T$\epsilon_\pi^2a^0$'
+    title['t_esq1_a2']    = r'T$\epsilon_\pi^2a^2$'
+    title['t_esq1_aSa2']  = r'T$\epsilon_\pi^1\alpha_Sa^2$'
+
+    title['x_lo_a2']      = r'$\chi\epsilon_\pi^0a^2$'
+    title['x_lo_aSa2']    = r'$\chi\epsilon_\pi^0\alpha_Sa^2$'
+    title['x_nlo_a0']     = r'$\chi\epsilon_\pi^2a^0$'
+    title['x_nlo_a2']     = r'$\chi\epsilon_\pi^2a^2$'
+    title['x_nlo_aSa2']   = r'$\chi\epsilon_\pi^2\alpha_Sa^2$'
     return model_set, title, nbs
     
 
