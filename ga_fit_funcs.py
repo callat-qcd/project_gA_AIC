@@ -106,7 +106,7 @@ class FV_function():
             11:24, 12:8, 13:24, 14:48, 15:0, 16:6, 17:48, 18:36, 19:24, 20:24,
             }
         self.cn = np.array([6,12,8,6,24,24,0,12,30,24,24,8,24,48,0,6,48,36,24,24])
-        self.n_mag = np.arange(1,len(self.cn)+1,1)
+        self.n_mag = np.sqrt(np.arange(1,len(self.cn)+1,1))
         self.cn_matrix = np.zeros(self.mL.shape+(1,)) + self.cn
         self.n_mat = np.zeros(self.mL.shape+(1,)) + self.n_mag
         # hacky - hacky - fix cause of STUPID BEHAVIOR OF np.rollaxis
